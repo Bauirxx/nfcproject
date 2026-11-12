@@ -108,17 +108,26 @@ Testes: `totp.test.ts`, `vcard.test.ts`, `vcf-download.test.ts`, `handlers/*.tes
 | `app/theme.ts`, `app/theme-toggle.tsx` | `initTheme`, `useTheme`, `set/getThemePreference`, `ThemeToggle` | `shared/lib/theme-preference` |
 | `app/nav-items.ts`, `app/use-sign-out.ts`, `app/placeholder-page.ts` | `navItems`, `useSignOut`, `PlaceholderPage` | `i18n/panel/nav`, `api/client`, `endpoints` |
 | `shared/components/ui/{button,spinner,skeleton,toaster,toast-store}` | `Button`/`buttonVariants`, `Spinner`, `Skeleton`, `Toaster`, `toast` | `lib/cn`, `i18n/panel/common`, `@radix-ui/react-slot`, `class-variance-authority`, `lucide-react` |
-| `shared/i18n/panel/*` | `commonTexts`, `navTexts`, `errorPageTexts` | — |
+| `shared/components/ui/{input,label,text-field,password-field,card,alert,qr-code}` | `Input`, `Label`, `TextField`, `PasswordField`, `Card*`, `Alert`, `QrCode` | `lib/cn`, `i18n/panel/common`, `lucide-react`, `uqr` (só `qr-code`) |
+| `shared/i18n/panel/*` | `commonTexts`, `navTexts`, `errorPageTexts`, `authTexts` | — |
 | `shared/lib/theme-preference.ts` | tema em `localStorage` (única exceção) e classe `dark` | — |
 | `test/utils.tsx` | `renderApp`, `renderWithProviders`, `makeTestClient` | `providers`, `routes`, `mocks/handlers/testing` |
 
 Testes: `app/{app-shell,error-pages,theme-toggle,session-events}.test.tsx`.
 
+### 3.6 Funcionalidades (confirmado)
+
+| Caminho | Conteúdo | Depende de | Tarefa |
+|---------|----------|------------|--------|
+| `features/auth/` (`auth-layout`, `from-state`, `use-url-token`, `schemas`, `login-page`, `mfa-verify-page`, `mfa-setup-page`, `recover-password-page`, `reset-password-page`, `accept-invite-page`) | Ecrãs de autenticação; substituem os `PlaceholderPage` das rotas de auth | `api/client`/`lib/parsed-api`, `endpoints`, `shared/schemas`, `shared/components/ui/*`, `app/session-events`, `react-hook-form`, `@hookform/resolvers/zod` | T-FE-06 |
+
+Testes: `features/auth/*.test.tsx` (login, mfa verificar/configurar, recuperar, definir, convite).
+
 ### 3.5 Planeado (inferido, sem código)
 
 | Caminho | Conteúdo previsto | Tarefas |
 |---------|-------------------|---------|
-| `src/features/{auth,public-card,cards,profiles,contact-sending,companies,members,analytics,themes,audit}/` | Ecrãs por funcionalidade (substituem os `PlaceholderPage`) | T-FE-06 a T-FE-25 |
+| `src/features/{public-card,cards,profiles,contact-sending,companies,members,analytics,themes,audit}/` | Ecrãs por funcionalidade (substituem os `PlaceholderPage`) | T-FE-10 a T-FE-25 |
 | Ramificação da página pública em `main.tsx` | Render estático de `/c/:token` e `/p/:slug` | T-FE-10 |
 | `e2e/`, `playwright.config.ts` | Cinco fluxos principais contra o build com CSP | T-FE-27 |
 | `scripts/check-bundle-size.mjs` | Orçamento de JavaScript da página pública | T-FE-28 |

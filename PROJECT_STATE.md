@@ -25,7 +25,8 @@ auth, companies, members, cards, profiles, sharing, contact-sending, analytics, 
 Cumprem a Definition of Done:
 
 - T-FE-02 Pacote partilhado (`packages/shared`): schemas, validadores, links, permissões, contraste e imagens, com 82 testes, registado no grafo e nos ADR-0004, 0005 e 0009.
-- T-FE-05 Estrutura do painel: router por objetos (`app/routes.tsx`) com guards por sessão, MFA e permissão, casca responsiva (`app/app-shell.tsx`) com menu por papel e seletor de tema, páginas de erro 403/404/500/sessão expirada, cliente do TanStack Query com avisos (toasts), sessão sobre `['session']` e `main.tsx` a arrancar a API simulada e a carregar o painel por `import()`. Os ecrãs internos são provisórios (`PlaceholderPage`) até T-FE-06 em diante. 13 testes; build de produção verificado.
+- T-FE-05 Estrutura do painel: router por objetos (`app/routes.tsx`) com guards por sessão, MFA e permissão, casca responsiva (`app/app-shell.tsx`) com menu por papel e seletor de tema, páginas de erro 403/404/500/sessão expirada, cliente do TanStack Query com avisos (toasts), sessão sobre `['session']` e `main.tsx` a arrancar a API simulada e a carregar o painel por `import()`. Os ecrãs internos são provisórios (`PlaceholderPage`) até às tarefas seguintes. 13 testes; build de produção verificado.
+- T-FE-06 Autenticação: login, verificação MFA (TOTP e código de recuperação), configuração de MFA (QR local com `uqr` desenhado em SVG + chave manual + códigos de recuperação mostrados uma vez), recuperação e definição de palavra-passe (token do URL, retirado do endereço) e aceitar convite, sobre a API simulada e com respostas validadas por `apiParsed`. 19 testes.
 
 O que mais existe e está verificado:
 
@@ -51,7 +52,7 @@ O que mais existe e está verificado:
 | T-FE-01 Base do projeto | Em revisão | `main.tsx` feito; faltam `playwright.config.ts` (T-FE-27) e `scripts/check-bundle-size.mjs` (T-FE-28) |
 | T-FE-03 Cliente da API | Em revisão | Código, testes e ADR-0005 prontos; `lib/parsed-api.ts` ganha teste com o primeiro consumidor (T-FE-06) |
 | T-FE-04 API simulada (MSW) | Em revisão | Código, testes, ADR-0009 e grafo prontos; `main.tsx` chama `startMockApi`; falta confirmar o worker no browser real (ao abrir `pnpm dev`) |
-| T-FE-06 Autenticação | Em desenvolvimento | Login e verificação MFA (TOTP e código de recuperação) feitos e testados; faltam configurar MFA, recuperar/definir palavra-passe e aceitar convite |
+| T-FE-10/11 Página pública | Planeada | Render estático em `main.tsx` para `/c/:token` e `/p/:slug`, página neutra, eventos, QR, partilha, envio do dono (próxima tarefa) |
 
 ## Pendentes
 
@@ -93,6 +94,7 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 - 2026-11-12: `handlers/index.ts` junta todos os handlers e responde 404 `not_found` a qualquer outro `/api/*`, com 3 testes (inclui a verificação de que não há método e caminho repetidos).
 - 2026-11-12: documentação da T-FE-04: ADR-0009 (estratégia de testes e API simulada), `docs/codebase-graph.md`, pressupostos P-09 a P-11 e estados das tarefas em `docs/requirements.md`, complementos aos ADR-0004 (códigos de erro) e ADR-0005 (renovação, `refreshable`, CSRF).
 - 2026-11-12: `mocks/server.ts` ligado em `src/test/setup.ts` (todos os testes correm sobre a API simulada completa; `useMockServer` passou a acrescentar rotas ao servidor global antes de cada teste), `mocks/browser.ts` (`startMockApi`) e `mocks/vcf-download.ts` com 5 testes.
+- 2026-11-12: T-FE-06 (completa) — configuração de MFA (QR local `uqr` em SVG via `shared/components/ui/qr-code.tsx`, chave manual e códigos de recuperação mostrados uma vez), recuperação e definição de palavra-passe (token lido do URL com `useUrlToken` e retirado do endereço) e aceitar convite. Schemas de formulário (`features/auth/schemas.ts`) com confirmação de palavra-passe. Mais 13 testes.
 - 2026-11-12: T-FE-06 (parcial) — login e verificação MFA. Componentes de formulário (`input`, `label`, `text-field`, `password-field`, `card`, `alert`), textos de autenticação, `AuthLayout`, `LoginPage` e `MfaVerifyPage` (TOTP e código de recuperação) sobre a API simulada, com `apiParsed` a validar as respostas. Rótulos marcam o campo opcional (não o obrigatório). 6 testes.
 - 2026-11-12: T-FE-05 — estrutura do painel. Preferência e store de tema, textos do painel (`shared/i18n/panel`), componentes base (`shared/components/ui`: button, spinner, skeleton, toaster + toast-store), sessão e aviso de expiração (`app/session.ts`, `app/session-events.ts`), cliente do TanStack Query, providers, guards, páginas de erro, casca com menu por papel e seletor de tema, rotas, router, `app/entry.tsx` e `main.tsx`. 13 testes (casca, páginas de erro, tema, expiração) e build de produção verificado (`main.tsx` 1,2 KB gzip; painel 130 KB gzip à parte; API simulada fora do build).
 
@@ -100,13 +102,16 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 294 testes a passar (82 em `packages/shared`, 212 em `apps/web`).
+- `pnpm test`: 301 testes a passar (82 em `packages/shared`, 219 em `apps/web`).
 - `pnpm --filter @nfc-business/web build`: a passar; API simulada confirmada fora do bundle.
 - Playwright: ainda sem testes. Falta o `scripts/check-bundle-size.mjs` (T-FE-28).
 
 ## Registo de continuidade
 
-- Última tarefa: T-FE-05, estrutura do painel — concluída (router, guards, casca, páginas de erro, tema, toasts, sessão, `main.tsx`), com build de produção verificado.
+- Última tarefa: T-FE-06, autenticação — concluída (login, MFA verificar/configurar, recuperar/definir palavra-passe, aceitar convite), 19 testes.
+- Ficheiros da T-FE-06: `apps/web/src/features/auth/*` (auth-layout, from-state, use-url-token, schemas, login-page, mfa-verify-page, mfa-setup-page, recover-password-page, reset-password-page, accept-invite-page + testes), `apps/web/src/shared/components/ui/{input,label,text-field,password-field,card,alert,qr-code}`, `apps/web/src/shared/i18n/panel/auth.ts`, entradas novas em `shared/i18n/panel/common.ts` e `shared/i18n/errors.ts`.
+- Notas de implementação da T-FE-06: as respostas são validadas por `apiParsed`; o QR do MFA é desenhado em SVG a partir da matriz de `uqr.encode` (sem `dangerouslySetInnerHTML`); os rótulos dos campos marcam o *opcional*, não o obrigatório (não poluir o nome acessível); depois de confirmar o MFA, a sessão em cache é corrigida (`mfaEnabled: true`) antes de ir para o painel; `useUrlToken` lê o `?token=` uma vez (inicializador de `useState`) e retira-o do URL.
+- Última tarefa anterior: T-FE-05, estrutura do painel — concluída, com build de produção verificado.
 - Ficheiros do último bloco: `apps/web/src/app/*` (routes, router, entry, app-shell, guards, error-pages, providers, query-client, session, session-events, theme, theme-toggle, nav-items, use-sign-out, placeholder-page), `apps/web/src/shared/components/ui/{button,spinner,skeleton,toaster,toast-store}`, `apps/web/src/shared/i18n/panel/*`, `apps/web/src/shared/lib/theme-preference.ts`, `apps/web/src/main.tsx`, `apps/web/src/test/utils.tsx`, e os testes `app/{app-shell,error-pages,theme-toggle,session-events}.test.tsx`.
 - `main.tsx` ainda não ramifica para a página pública: todos os caminhos abrem o painel. A ramificação estática para `/c/:token` e `/p/:slug` entra na T-FE-10 (com import relativo, para não cair na regra `@/features/*` do ESLint do bundle público).
 - Para testes de componentes/fluxos: `renderApp({ route, as })` e `renderWithProviders(ui)` em `src/test/utils.tsx` (`as` é um id de utilizador dos dados de demonstração; inicia sessão com `signIn` antes de montar).
@@ -132,10 +137,10 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
   - Estatísticas: base determinística por cartão e dia, mais os contadores registados.
   - Uploads: `POST /api/uploads/sign` devolve `/api/uploads/<fileId>`; o `PUT` valida tamanho e magic bytes com `detectImageType`.
 - Verificado no ambiente de testes (Vitest com jsdom): o MSW resolve URLs relativos, aceita `AbortSignal`, corpos `Blob` e respostas lançadas pelos resolvers. No MSW 3 a opção chama-se `onUnhandledFrame` (não `onUnhandledRequest`).
-- Próxima tarefa — T-FE-06 (autenticação), por ordem sugerida:
-  1. Mais componentes base necessários aos formulários: `input`, `label`, `form-field` (rótulo + erro + descrição, ligado por `aria-describedby`/`aria-invalid`), `card`, `alert`. Usar React Hook Form + `zodResolver` com os schemas de `@nfc-business/shared/schemas` e traduzir os códigos com `shared/i18n/validation.ts`.
-  2. `features/auth/`: `LoginPage` (credenciais → `status mfa_required` leva a `/entrar/mfa`; senão grava a sessão em `['session']` e vai para `/painel`), `MfaVerifyPage` (código TOTP ou de recuperação), `MfaSetupPage` (QR local com `uqr` + chave manual + códigos de recuperação mostrados uma vez), `RecoverPasswordPage`, `ResetPasswordPage` (lê `?token=`), `AcceptInvitePage` (lê `?token=`, no fim vai para `/entrar`). Substituir os `PlaceholderPage` das rotas de auth.
-  3. Após o login, usar `queryClient.setQueryData(['session'], user)` ou `invalidateQueries(['session'])`; o `sessionQueryKey` está em `app/session-events.ts`.
-  4. Textos em `shared/i18n/panel/auth.ts` (novo). Dicionário de validação já existe em `shared/i18n/validation.ts`.
-  5. Testes com `renderApp`/`renderWithProviders` e a API simulada (contas e chaves em `docs/chaves-de-demonstracao.md`): login com MFA, limites, recuperação, convite. Escrever um teste para `lib/parsed-api.ts` com o primeiro consumidor.
+- Próxima tarefa — T-FE-10/11 (página pública), por ordem sugerida:
+  1. Em `main.tsx`, ramificar por caminho (ADR-0003): se o `location.pathname` for `/c/:token` ou `/p/:slug`, renderizar a página pública **importada estaticamente** por caminho relativo (`./features/public-card/...`, não `@/features/*`, para não cair na regra do ESLint do bundle público); caso contrário, carregar o painel por `import()` como agora.
+  2. `features/public-card/`: página rápida e leve (só React, o cliente da API sem dependências e as entradas sem dependências de `@nfc-business/shared`: `/links`, `/validators`, `/constants`; tipos de `/schemas` só com `import type`). Ler `GET /api/public/cards/:token` (ou `/profiles/:slug`); 404 → página neutra «Cartão indisponível» (sem razões). Botões Guardar contacto (VCF), Ligar, WhatsApp, Email, Website, Localização; redes sociais; tema do perfil aplicado por variáveis CSS inline. Textos em `shared/i18n/public.ts` (já existe).
+  3. Registar eventos com `POST /api/public/events` (`view` ao abrir; `whatsapp_click`, `email_click`, `vcf_download` nos cliques), com `keepalive`, erros ignorados.
+  4. QR e envio do dono carregados a pedido (`import()` dinâmico). O QR pode reusar a matriz de `uqr` (como em `shared/components/ui/qr-code.tsx`), mas aqui tem de ser dinâmico. O envio do dono (T-FE-11) só aparece com sessão iniciada e o perfil a pertencer ao utilizador.
+  5. Verificar o orçamento: `pnpm --filter @nfc-business/web build` e confirmar que a página pública não puxa router/TanStack Query/RHF/Zod (ESLint já impede os imports estáticos).
 - Passos para retomar: ver `README.md` (instalação) e depois correr `pnpm typecheck`, `pnpm lint` e `pnpm test` antes de continuar. Node 24 ativo (`nvm use 24.22.2`).

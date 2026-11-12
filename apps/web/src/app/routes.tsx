@@ -1,6 +1,10 @@
 import { Navigate, type RouteObject } from 'react-router';
+import { AcceptInvitePage } from '@/features/auth/accept-invite-page';
 import { LoginPage } from '@/features/auth/login-page';
+import { MfaSetupPage } from '@/features/auth/mfa-setup-page';
 import { MfaVerifyPage } from '@/features/auth/mfa-verify-page';
+import { RecoverPasswordPage } from '@/features/auth/recover-password-page';
+import { ResetPasswordPage } from '@/features/auth/reset-password-page';
 import { navTexts } from '@/shared/i18n/panel/nav';
 import { AppShell } from './app-shell';
 import { ForbiddenPage, NotFoundPage, ServerErrorPage, SessionExpiredPage } from './error-pages';
@@ -22,18 +26,18 @@ export const routes: RouteObject[] = [
         children: [
           { path: 'entrar', element: <LoginPage /> },
           { path: 'entrar/mfa', element: <MfaVerifyPage /> },
-          { path: 'recuperar-password', element: <PlaceholderPage title="Recuperar palavra-passe" /> },
+          { path: 'recuperar-password', element: <RecoverPasswordPage /> },
         ],
       },
       // Links de uso único: acessíveis com ou sem sessão
-      { path: 'definir-password', element: <PlaceholderPage title="Definir palavra-passe" /> },
-      { path: 'convite', element: <PlaceholderPage title="Aceitar convite" /> },
+      { path: 'definir-password', element: <ResetPasswordPage /> },
+      { path: 'convite', element: <AcceptInvitePage /> },
       { path: 'sessao-expirada', element: <SessionExpiredPage /> },
 
       // Configuração de MFA: exige sessão, mas não a verificação de MFA já feita
       {
         element: <RequireAuth allowMfaSetup />,
-        children: [{ path: 'configurar-mfa', element: <PlaceholderPage title="Configurar a verificação em dois passos" /> }],
+        children: [{ path: 'configurar-mfa', element: <MfaSetupPage /> }],
       },
 
       // Painel
