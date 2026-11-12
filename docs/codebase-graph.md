@@ -91,15 +91,35 @@ Testes: `api/client.test.ts` (23 testes, `fetch` substituído por `vi.stubGlobal
 
 Testes: `totp.test.ts`, `vcard.test.ts`, `vcf-download.test.ts`, `handlers/*.test.ts` (um por handler, mais `http.test.ts` e `index.test.ts`).
 
-### 3.4 Planeado (inferido, sem código)
+### 3.4 Casca do painel (`src/app` e base de UI, confirmado, T-FE-05)
+
+| Ficheiro | Exporta | Depende de |
+|----------|---------|------------|
+| `main.tsx` | Entrada: arranca a API simulada (dev/e2e) e carrega o painel por `import()`. A ramificação estática para a página pública entra na T-FE-10 | `@/mocks/browser` e `@/app/entry` (ambos por `import()`) |
+| `app/entry.tsx` | `renderPanel` | `providers`, `query-client`, `router`, `session-events`, `theme` |
+| `app/routes.tsx`, `app/router.ts` | `routes`, `createRouter` | guards, páginas de erro, `app-shell`, `placeholder-page` |
+| `app/guards.tsx` | `RequireAuth`, `RequireGuest`, `RequirePermission` | `session`, `session-events`, `error-pages`, `shared/permissions` |
+| `app/app-shell.tsx` | `AppShell` (menu por papel, seletor de tema, terminar sessão) | `nav-items`, `session`, `theme-toggle`, `use-sign-out`, `shared/permissions` |
+| `app/error-pages.tsx` | `ForbiddenPage`, `NotFoundPage`, `ServerErrorPage`, `SessionExpiredPage` | `session-events`, `i18n/panel/error-pages`, `ui/button` |
+| `app/session.ts` | `useSession`, `useCurrentUser`, `usePermission` | `api/session`, `session-events`, `shared/permissions` |
+| `app/session-events.ts` | `sessionQueryKey`, `isSessionExpired`, `clearSessionExpired`, `watchSession` | `api/events` |
+| `app/query-client.ts` | `createQueryClient` (avisos nas mutações sem `inlineError`) | `ui/toast-store`, `i18n/errors` |
+| `app/providers.tsx` | `Providers` (QueryClient + Toaster) | `ui/toaster` |
+| `app/theme.ts`, `app/theme-toggle.tsx` | `initTheme`, `useTheme`, `set/getThemePreference`, `ThemeToggle` | `shared/lib/theme-preference` |
+| `app/nav-items.ts`, `app/use-sign-out.ts`, `app/placeholder-page.ts` | `navItems`, `useSignOut`, `PlaceholderPage` | `i18n/panel/nav`, `api/client`, `endpoints` |
+| `shared/components/ui/{button,spinner,skeleton,toaster,toast-store}` | `Button`/`buttonVariants`, `Spinner`, `Skeleton`, `Toaster`, `toast` | `lib/cn`, `i18n/panel/common`, `@radix-ui/react-slot`, `class-variance-authority`, `lucide-react` |
+| `shared/i18n/panel/*` | `commonTexts`, `navTexts`, `errorPageTexts` | — |
+| `shared/lib/theme-preference.ts` | tema em `localStorage` (única exceção) e classe `dark` | — |
+| `test/utils.tsx` | `renderApp`, `renderWithProviders`, `makeTestClient` | `providers`, `routes`, `mocks/handlers/testing` |
+
+Testes: `app/{app-shell,error-pages,theme-toggle,session-events}.test.tsx`.
+
+### 3.5 Planeado (inferido, sem código)
 
 | Caminho | Conteúdo previsto | Tarefas |
 |---------|-------------------|---------|
-| `src/main.tsx` | Entrada: página pública estática para `/c/:token` e `/p/:slug`, painel em `import()`; `if (__API_MOCKING__) startMockApi()` | T-FE-01, T-FE-05 |
-| `src/app/` | Router, guards por papel, layout, menu, tema claro/escuro, páginas de erro | T-FE-05 |
-| `src/shared/components/` | Componentes shadcn/ui e base | T-FE-05 |
-| `src/shared/lib/theme-preference.ts` | Única leitura de `localStorage` permitida (tema) | T-FE-05 |
-| `src/features/{auth,public-card,cards,profiles,contact-sending,companies,members,analytics,themes,audit}/` | Ecrãs por funcionalidade | T-FE-06 a T-FE-25 |
+| `src/features/{auth,public-card,cards,profiles,contact-sending,companies,members,analytics,themes,audit}/` | Ecrãs por funcionalidade (substituem os `PlaceholderPage`) | T-FE-06 a T-FE-25 |
+| Ramificação da página pública em `main.tsx` | Render estático de `/c/:token` e `/p/:slug` | T-FE-10 |
 | `e2e/`, `playwright.config.ts` | Cinco fluxos principais contra o build com CSP | T-FE-27 |
 | `scripts/check-bundle-size.mjs` | Orçamento de JavaScript da página pública | T-FE-28 |
 

@@ -1,0 +1,42 @@
+// Textos comuns do painel. Centralizados (ADR-0008): nenhum texto visível fica solto nos componentes.
+export const commonTexts = {
+  appName: 'NFC Business',
+  actions: {
+    save: 'Guardar',
+    saving: 'A guardar…',
+    cancel: 'Cancelar',
+    confirm: 'Confirmar',
+    close: 'Fechar',
+    create: 'Criar',
+    edit: 'Editar',
+    remove: 'Remover',
+    back: 'Voltar',
+    retry: 'Tentar novamente',
+    search: 'Pesquisar',
+    copy: 'Copiar',
+    copied: 'Copiado',
+    download: 'Transferir',
+    open: 'Abrir',
+    more: 'Mais ações',
+  },
+  states: {
+    loading: 'A carregar…',
+    empty: 'Nada a mostrar.',
+    errorTitle: 'Algo correu mal',
+    required: 'Obrigatório',
+    optional: 'Opcional',
+  },
+  pagination: {
+    previous: 'Anterior',
+    next: 'Seguinte',
+    page: (page: number, total: number) => `Página ${page} de ${total}`,
+    range: (from: number, to: number, total: number) => `${from}–${to} de ${total}`,
+  },
+  theme: {
+    label: 'Tema',
+    light: 'Claro',
+    dark: 'Escuro',
+    system: 'Automático',
+    toggle: 'Mudar o tema',
+  },
+} as const;

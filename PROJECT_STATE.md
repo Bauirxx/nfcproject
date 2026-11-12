@@ -25,6 +25,7 @@ auth, companies, members, cards, profiles, sharing, contact-sending, analytics, 
 Cumprem a Definition of Done:
 
 - T-FE-02 Pacote partilhado (`packages/shared`): schemas, validadores, links, permissões, contraste e imagens, com 82 testes, registado no grafo e nos ADR-0004, 0005 e 0009.
+- T-FE-05 Estrutura do painel: router por objetos (`app/routes.tsx`) com guards por sessão, MFA e permissão, casca responsiva (`app/app-shell.tsx`) com menu por papel e seletor de tema, páginas de erro 403/404/500/sessão expirada, cliente do TanStack Query com avisos (toasts), sessão sobre `['session']` e `main.tsx` a arrancar a API simulada e a carregar o painel por `import()`. Os ecrãs internos são provisórios (`PlaceholderPage`) até T-FE-06 em diante. 13 testes; build de produção verificado.
 
 O que mais existe e está verificado:
 
@@ -47,10 +48,10 @@ O que mais existe e está verificado:
 
 | Tarefa | Estado | Notas |
 | --- | --- | --- |
-| T-FE-01 Base do projeto | Em desenvolvimento | Faltam `main.tsx`, `playwright.config.ts` e `scripts/check-bundle-size.mjs` |
-| T-FE-03 Cliente da API | Em revisão | Código, testes e ADR-0005 prontos; falta um teste para `lib/parsed-api.ts` e o primeiro consumidor |
-| T-FE-04 API simulada (MSW) | Em revisão | Código, testes, ADR-0009 e grafo prontos; falta verificar o arranque do worker no browser quando `main.tsx` chamar `startMockApi` (T-FE-05) |
-| T-FE-05 Estrutura do painel | Planeada | Router, guards, layout, páginas de erro |
+| T-FE-01 Base do projeto | Em revisão | `main.tsx` feito; faltam `playwright.config.ts` (T-FE-27) e `scripts/check-bundle-size.mjs` (T-FE-28) |
+| T-FE-03 Cliente da API | Em revisão | Código, testes e ADR-0005 prontos; `lib/parsed-api.ts` ganha teste com o primeiro consumidor (T-FE-06) |
+| T-FE-04 API simulada (MSW) | Em revisão | Código, testes, ADR-0009 e grafo prontos; `main.tsx` chama `startMockApi`; falta confirmar o worker no browser real (ao abrir `pnpm dev`) |
+| T-FE-06 Autenticação | Planeada | Login, verificação MFA, configuração MFA, recuperação/definição de palavra-passe, aceitar convite (próxima tarefa) |
 
 ## Pendentes
 
@@ -73,6 +74,12 @@ Nenhum.
 
 Ver `docs/adr/` (0001 a 0009). A estratégia de testes e a API simulada estão no ADR-0009; os códigos de erro da API simulada a confirmar pelo backend estão no complemento do ADR-0004.
 
+Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
+
+- O menu no telemóvel é um painel colapsável (botão com `aria-expanded`/`aria-controls`), não um diálogo modal: o `react-remove-scroll` usado pelo `Dialog` do Radix injeta um `<style>`, incompatível com `style-src 'self'`. O Radix Dialog/DropdownMenu só será usado onde for mesmo preciso (confirmações de ações em cartões e membros) e a compatibilidade com a CSP será verificada nos e2e (T-FE-27).
+- A conta e o terminar sessão estão no rodapé da barra lateral (visíveis), em vez de um menu suspenso, pela mesma razão e porque a gestão detalhada da conta tem ecrã próprio (T-FE-25).
+- O tema é um store ao nível do módulo (`app/theme.ts`) sobre a única leitura de `localStorage` permitida (`shared/lib/theme-preference.ts`); o modo escuro é a classe `dark` em `<html>`.
+
 ## Alterações recentes
 
 - 2026-11-12: cliente da API e testes; textos centralizados (`shared/i18n`); início da API simulada; primeiro commit no GitHub.
@@ -86,18 +93,22 @@ Ver `docs/adr/` (0001 a 0009). A estratégia de testes e a API simulada estão n
 - 2026-11-12: `handlers/index.ts` junta todos os handlers e responde 404 `not_found` a qualquer outro `/api/*`, com 3 testes (inclui a verificação de que não há método e caminho repetidos).
 - 2026-11-12: documentação da T-FE-04: ADR-0009 (estratégia de testes e API simulada), `docs/codebase-graph.md`, pressupostos P-09 a P-11 e estados das tarefas em `docs/requirements.md`, complementos aos ADR-0004 (códigos de erro) e ADR-0005 (renovação, `refreshable`, CSRF).
 - 2026-11-12: `mocks/server.ts` ligado em `src/test/setup.ts` (todos os testes correm sobre a API simulada completa; `useMockServer` passou a acrescentar rotas ao servidor global antes de cada teste), `mocks/browser.ts` (`startMockApi`) e `mocks/vcf-download.ts` com 5 testes.
+- 2026-11-12: T-FE-05 — estrutura do painel. Preferência e store de tema, textos do painel (`shared/i18n/panel`), componentes base (`shared/components/ui`: button, spinner, skeleton, toaster + toast-store), sessão e aviso de expiração (`app/session.ts`, `app/session-events.ts`), cliente do TanStack Query, providers, guards, páginas de erro, casca com menu por papel e seletor de tema, rotas, router, `app/entry.tsx` e `main.tsx`. 13 testes (casca, páginas de erro, tema, expiração) e build de produção verificado (`main.tsx` 1,2 KB gzip; painel 130 KB gzip à parte; API simulada fora do build).
 
 ## Estado dos testes
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 275 testes a passar (82 em `packages/shared`, 193 em `apps/web`).
-- Playwright: ainda sem testes. Sem verificação de build nem de tamanho do bundle.
+- `pnpm test`: 288 testes a passar (82 em `packages/shared`, 206 em `apps/web`).
+- `pnpm --filter @nfc-business/web build`: a passar; API simulada confirmada fora do bundle.
+- Playwright: ainda sem testes. Falta o `scripts/check-bundle-size.mjs` (T-FE-28).
 
 ## Registo de continuidade
 
-- Última tarefa: T-FE-04, API simulada — código (blocos 1 a 9) e documentação (bloco 10: ADR-0009, grafo, requisitos, ADR-0004 e 0005) concluídos.
-- Ficheiros envolvidos no último bloco: `docs/adr/0009-estrategia-de-testes-e-api-simulada.md`, `docs/codebase-graph.md`, `docs/requirements.md`, `docs/adr/0004-contrato-de-api-provisorio.md`, `docs/adr/0005-sessao-csrf-e-renovacao.md`.
+- Última tarefa: T-FE-05, estrutura do painel — concluída (router, guards, casca, páginas de erro, tema, toasts, sessão, `main.tsx`), com build de produção verificado.
+- Ficheiros do último bloco: `apps/web/src/app/*` (routes, router, entry, app-shell, guards, error-pages, providers, query-client, session, session-events, theme, theme-toggle, nav-items, use-sign-out, placeholder-page), `apps/web/src/shared/components/ui/{button,spinner,skeleton,toaster,toast-store}`, `apps/web/src/shared/i18n/panel/*`, `apps/web/src/shared/lib/theme-preference.ts`, `apps/web/src/main.tsx`, `apps/web/src/test/utils.tsx`, e os testes `app/{app-shell,error-pages,theme-toggle,session-events}.test.tsx`.
+- `main.tsx` ainda não ramifica para a página pública: todos os caminhos abrem o painel. A ramificação estática para `/c/:token` e `/p/:slug` entra na T-FE-10 (com import relativo, para não cair na regra `@/features/*` do ESLint do bundle público).
+- Para testes de componentes/fluxos: `renderApp({ route, as })` e `renderWithProviders(ui)` em `src/test/utils.tsx` (`as` é um id de utilizador dos dados de demonstração; inicia sessão com `signIn` antes de montar).
 - Estado exato: todos os endpoints do ADR-0004 têm handler e testes, reunidos em `handlers/index.ts`. O servidor MSW global (`mocks/server.ts`) é ligado em `src/test/setup.ts` com `onUnhandledFrame: 'error'`, e `resetHandlers` e `resetDb` correm depois de cada teste; `useMockServer(handlers)` acrescenta rotas com `server.use` antes de cada teste. `mocks/browser.ts` exporta `startMockApi()`: `enablePersistence()`, `setupWorker(...handlers).start({ onUnhandledFrame: 'bypass', quiet: true, serviceWorker: { url: '/mockServiceWorker.js' } })` e `interceptVcfDownloads()`. A captura do VCF (`mocks/vcf-download.ts`) impede a navegação nos links `/api/public/(cards|profiles)/:x/contact.vcf` da mesma origem, pede o ficheiro com `fetch` e entrega-o como Blob com o nome do `Content-Disposition`; não toca em cliques com modificadores nem já tratados. `startMockApi` ainda não é chamado por ninguém: falta `main.tsx` (T-FE-05).
 - Comportamentos implementados no bloco 7 (público): `GET /api/public/cards/:token` e `/api/public/profiles/:slug` só respondem a cartões `active` com perfil (pelo endereço amigável, o perfil precisa de um cartão ativo) e devolvem a vista pública (nome sempre público, restantes campos conforme a visibilidade, só contactos e redes `isPublic`), com `Cache-Control: public, max-age=60`; tudo o resto, incluindo tokens mal formados, dá o mesmo 404 `not_found`. O VCF é `text/vcard; charset=utf-8`, `Content-Disposition: attachment; filename="<slug>.vcf"`, gerado por `mocks/vcard.ts` (vCard 4.0: escape de `\`, `,`, `;` e quebras de linha, remoção de caracteres de controlo, linhas dobradas a 75 octetos, `N` com o último nome como apelido, telefones só em E.164 sem repetições, redes em `X-SOCIALPROFILE`, link do cartão em `URL;TYPE=x-nfc-card`, sem fotografia). `POST /api/public/events` exige o token CSRF, valida a lista fechada, responde sempre 204 e deduplica 30 minutos por cartão e tipo (não por IP, que a simulação não conhece); o limite de 60 pedidos por minuto por IP também não é simulado.
 - Comportamentos implementados no bloco 6: estatísticas com `from` e `to` obrigatórios (intervalo até 366 dias, senão 400), base determinística por cartão e dia (`demoWeight`, menos atividade ao fim de semana, nada no futuro nem antes da criação do cartão) somada aos contadores registados; cartões visíveis segundo o papel (platform_admin todos, com `byCompany` e filtro `companyId`; empresa; o dono só os cartões dos seus perfis); `cardId` fora dos visíveis dá 404 e `companyId` sem `analytics.filterByCompany` dá 403. Auditoria: platform_admin vê tudo, company_admin só a sua empresa; filtros `action`, `actor` (nome ou email, sem maiúsculas) e `from`/`to` por dia civil local; `from` > `to` dá 400. Nos testes, `signIn` regista um `auth.login` na auditoria, e as contagens contam com isso.
@@ -120,10 +131,10 @@ Ver `docs/adr/` (0001 a 0009). A estratégia de testes e a API simulada estão n
   - Estatísticas: base determinística por cartão e dia, mais os contadores registados.
   - Uploads: `POST /api/uploads/sign` devolve `/api/uploads/<fileId>`; o `PUT` valida tamanho e magic bytes com `detectImageType`.
 - Verificado no ambiente de testes (Vitest com jsdom): o MSW resolve URLs relativos, aceita `AbortSignal`, corpos `Blob` e respostas lançadas pelos resolvers. No MSW 3 a opção chama-se `onUnhandledFrame` (não `onUnhandledRequest`).
-- Próxima tarefa, por ordem:
-  1. Feito: `packages/shared/src/images.ts`, `mocks/vcard.ts`, `handlers/{auth,uploads,companies,members,cards,profiles,contact-shares,analytics,audit,public,index}.ts`.
-  2. Feito: `handlers/index.ts`.
-  3. Feito: `mocks/browser.ts`, `mocks/vcf-download.ts`, `mocks/server.ts` e a ligação em `src/test/setup.ts`.
-  4. T-FE-05: componentes base, router, guards, layout, páginas de erro e `main.tsx` (com `if (__API_MOCKING__) await (await import('@/mocks/browser')).startMockApi()` antes de montar a aplicação).
-  5. Feito: `docs/codebase-graph.md`, ADR-0009, complementos aos ADR-0004 e 0005 e `docs/requirements.md`.
-- Passos para retomar: ver `README.md` (instalação) e depois correr `pnpm typecheck`, `pnpm lint` e `pnpm test` antes de continuar.
+- Próxima tarefa — T-FE-06 (autenticação), por ordem sugerida:
+  1. Mais componentes base necessários aos formulários: `input`, `label`, `form-field` (rótulo + erro + descrição, ligado por `aria-describedby`/`aria-invalid`), `card`, `alert`. Usar React Hook Form + `zodResolver` com os schemas de `@nfc-business/shared/schemas` e traduzir os códigos com `shared/i18n/validation.ts`.
+  2. `features/auth/`: `LoginPage` (credenciais → `status mfa_required` leva a `/entrar/mfa`; senão grava a sessão em `['session']` e vai para `/painel`), `MfaVerifyPage` (código TOTP ou de recuperação), `MfaSetupPage` (QR local com `uqr` + chave manual + códigos de recuperação mostrados uma vez), `RecoverPasswordPage`, `ResetPasswordPage` (lê `?token=`), `AcceptInvitePage` (lê `?token=`, no fim vai para `/entrar`). Substituir os `PlaceholderPage` das rotas de auth.
+  3. Após o login, usar `queryClient.setQueryData(['session'], user)` ou `invalidateQueries(['session'])`; o `sessionQueryKey` está em `app/session-events.ts`.
+  4. Textos em `shared/i18n/panel/auth.ts` (novo). Dicionário de validação já existe em `shared/i18n/validation.ts`.
+  5. Testes com `renderApp`/`renderWithProviders` e a API simulada (contas e chaves em `docs/chaves-de-demonstracao.md`): login com MFA, limites, recuperação, convite. Escrever um teste para `lib/parsed-api.ts` com o primeiro consumidor.
+- Passos para retomar: ver `README.md` (instalação) e depois correr `pnpm typecheck`, `pnpm lint` e `pnpm test` antes de continuar. Node 24 ativo (`nvm use 24.22.2`).
