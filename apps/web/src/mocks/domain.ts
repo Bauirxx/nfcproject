@@ -55,6 +55,19 @@ export function recordAudit(
   });
 }
 
+/** Métricas das estatísticas (CLAUDE.md, regra 6): os cliques juntam WhatsApp e email. */
+export type Metric = 'views' | 'clicks' | 'vcfDownloads' | 'contactsSent';
+
+export function counterKey(cardId: string, date: string, metric: Metric): string {
+  return `${cardId}|${date}|${metric}`;
+}
+
+/** Regista um evento nas estatísticas do cartão, no dia civil local. */
+export function bumpCounter(db: MockDb, cardId: string, metric: Metric, date: string = civilDate()): void {
+  const key = counterKey(cardId, date, metric);
+  db.counters[key] = (db.counters[key] ?? 0) + 1;
+}
+
 /** Cartão ativo usado nos links de partilha de um perfil. */
 export function activeCardOf(db: MockDb, profileId: string): DbCard | undefined {
   return db.cards.find((card) => card.profileId === profileId && card.status === 'active');
