@@ -1,31 +1,17 @@
-import { setupServer } from 'msw/node';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { getDb, resetDb } from '../db';
-import { startSession } from '../domain';
+import { getDb } from '../db';
 import { hitLimit, json, paginate, readBody, requirePermission, route } from './http';
+import { signIn, useMockServer } from './testing';
 
-const server = setupServer(
+useMockServer([
   route('get', '/api/test/open', () => json({ ok: true })),
   route('post', '/api/test/echo', async ({ request }) =>
     json(await readBody(request, z.object({ name: z.string().min(2), tags: z.array(z.string()).optional() }))),
   ),
   route('get', '/api/test/cards', ({ db }) => json({ role: requirePermission(db, 'cards.view').role })),
   route('get', '/api/test/items/:id', ({ param }) => json({ id: param('id') })),
-);
-
-beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
-afterEach(() => {
-  resetDb();
-});
-afterAll(() => server.close());
-
-function signIn(userId: string): void {
-  const db = getDb();
-  const user = db.users.find((candidate) => candidate.id === userId);
-  if (!user) throw new Error(`utilizador desconhecido: ${userId}`);
-  startSession(db, user);
-}
+]);
 
 function post(body: string, withCsrf: boolean = true): Promise<Response> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };

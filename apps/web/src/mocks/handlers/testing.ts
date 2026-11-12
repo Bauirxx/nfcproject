@@ -1,20 +1,21 @@
-// Apoio aos testes dos handlers da API simulada: servidor MSW em Node, sessão e pedidos com token CSRF.
+// Apoio aos testes dos handlers da API simulada: rotas no servidor MSW global, sessão e pedidos com token CSRF.
 // Não é um ficheiro de testes (não termina em .test.ts); é importado por eles.
 import type { HttpHandler } from 'msw';
 import type { UploadMimeType, UploadPurpose } from '@nfc-business/shared/constants';
-import { setupServer } from 'msw/node';
-import { afterAll, afterEach, beforeAll } from 'vitest';
-import { getDb, resetDb, type DbUser } from '../db';
+import { beforeEach } from 'vitest';
+import { getDb, type DbUser } from '../db';
 import { startSession } from '../domain';
+import { server } from '../server';
 
-/** Liga o servidor MSW com os handlers dados durante a suite e repõe os dados depois de cada teste. */
+/**
+ * Garante que os handlers dados estão ativos durante a suite, à frente dos restantes. O servidor MSW é ligado
+ * em `src/test/setup.ts`, que também repõe as rotas e os dados depois de cada teste; por isso as rotas são
+ * acrescentadas antes de cada teste.
+ */
 export function useMockServer(handlers: readonly HttpHandler[]): void {
-  const server = setupServer(...handlers);
-  beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
-  afterEach(() => {
-    resetDb();
+  beforeEach(() => {
+    server.use(...handlers);
   });
-  afterAll(() => server.close());
 }
 
 /** Inicia sessão diretamente nos dados, sem passar pelo login. */

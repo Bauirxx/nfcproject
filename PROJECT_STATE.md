@@ -37,6 +37,7 @@ Nenhuma tarefa cumpre ainda a Definition of Done. O que existe e está verificad
 - Handlers de estatísticas e auditoria da API simulada (`handlers/{analytics,audit}.ts`): 15 testes a passar.
 - Handlers públicos da API simulada (`handlers/public.ts`) e gerador de vCard 4.0 (`mocks/vcard.ts`): 18 testes a passar.
 - Junção de todos os handlers com 404 para `/api/*` desconhecidos (`handlers/index.ts`): 3 testes a passar.
+- Servidor MSW global nos testes (`mocks/server.ts` ligado em `src/test/setup.ts`), arranque no browser (`mocks/browser.ts`) e captura do clique no link do VCF (`mocks/vcf-download.ts`): 5 testes a passar.
 
 ## Em curso
 
@@ -45,7 +46,7 @@ Nenhuma tarefa cumpre ainda a Definition of Done. O que existe e está verificad
 | T-FE-01 Base do projeto | Em desenvolvimento | Faltam `main.tsx`, `playwright.config.ts` e `scripts/check-bundle-size.mjs` |
 | T-FE-02 Pacote partilhado | Em testes | Inclui `images.ts` (magic bytes de JPEG, PNG e WebP); falta registar no grafo |
 | T-FE-03 Cliente da API | Em testes | Código e testes prontos; falta atualizar ADR-0004 e ADR-0005 |
-| T-FE-04 API simulada (MSW) | Em desenvolvimento | Feitos `credentials.ts`, `totp.ts`, `db.ts`, `seed.ts`, `domain.ts`, `vcard.ts`, `handlers/{http,testing,auth,uploads,companies,members,cards,profiles,contact-shares,analytics,audit,public,index}.ts`; faltam `browser.ts`, `server.ts` e a ligação ao `src/test/setup.ts` |
+| T-FE-04 API simulada (MSW) | Em revisão | Código e testes completos (`credentials`, `totp`, `db`, `seed`, `domain`, `vcard`, `vcf-download`, `server`, `browser`, `handlers/*`); faltam o ADR-0009, o grafo e a chamada a `startMockApi` em `main.tsx` (T-FE-05) |
 | T-FE-05 Estrutura do painel | Planeada | Router, guards, layout, páginas de erro |
 
 ## Pendentes
@@ -82,19 +83,20 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
 - 2026-11-12: handlers de estatísticas (série diária determinística mais eventos registados, por cartão e por empresa, com posse e filtros) e de auditoria (filtros por ação, autor e datas; isolamento por empresa) com 15 testes.
 - 2026-11-12: handlers públicos (cartão por token e por endereço amigável, VCF, eventos com deduplicação) e gerador de vCard 4.0 com escape e dobragem de linhas, com 18 testes.
 - 2026-11-12: `handlers/index.ts` junta todos os handlers e responde 404 `not_found` a qualquer outro `/api/*`, com 3 testes (inclui a verificação de que não há método e caminho repetidos).
+- 2026-11-12: `mocks/server.ts` ligado em `src/test/setup.ts` (todos os testes correm sobre a API simulada completa; `useMockServer` passou a acrescentar rotas ao servidor global antes de cada teste), `mocks/browser.ts` (`startMockApi`) e `mocks/vcf-download.ts` com 5 testes.
 
 ## Estado dos testes
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 270 testes a passar (82 em `packages/shared`, 188 em `apps/web`).
+- `pnpm test`: 275 testes a passar (82 em `packages/shared`, 193 em `apps/web`).
 - Playwright: ainda sem testes. Sem verificação de build nem de tamanho do bundle.
 
 ## Registo de continuidade
 
-- Última tarefa: T-FE-04, API simulada — handlers por módulo concluídos (blocos 1 a 8: autenticação; uploads, empresas e membros; cartões; perfis; envio de contacto; estatísticas e auditoria; página pública; índice).
-- Ficheiros envolvidos: `apps/web/src/mocks/handlers/{http,testing,auth,uploads,companies,members,cards,profiles,contact-shares,analytics,audit,public,index}.ts` (cada um com o seu `.test.ts`, exceto `testing.ts`), `apps/web/src/mocks/vcard.ts` (com teste), `apps/web/src/mocks/domain.ts`.
-- Estado exato: todos os endpoints do ADR-0004 têm handler e testes, reunidos em `handlers/index.ts` (`handlers`), que termina com `http.all('/api/*')` a responder 404 `not_found`. Faltam `mocks/browser.ts` (worker do MSW, `enablePersistence`, captura do clique no link do VCF), `mocks/server.ts` (`setupServer(...handlers)` para o Vitest) e a ligação do servidor MSW em `src/test/setup.ts`.
+- Última tarefa: T-FE-04, API simulada — concluído o código: handlers por módulo (blocos 1 a 8) e, no bloco 9, `server.ts`, `browser.ts`, `vcf-download.ts` e a ligação ao `setup.ts`.
+- Ficheiros envolvidos: `apps/web/src/mocks/{server,browser,vcf-download}.ts`, `apps/web/src/mocks/handlers/testing.ts`, `apps/web/src/test/setup.ts`, `apps/web/src/mocks/handlers/http.test.ts`.
+- Estado exato: todos os endpoints do ADR-0004 têm handler e testes, reunidos em `handlers/index.ts`. O servidor MSW global (`mocks/server.ts`) é ligado em `src/test/setup.ts` com `onUnhandledFrame: 'error'`, e `resetHandlers` e `resetDb` correm depois de cada teste; `useMockServer(handlers)` acrescenta rotas com `server.use` antes de cada teste. `mocks/browser.ts` exporta `startMockApi()`: `enablePersistence()`, `setupWorker(...handlers).start({ onUnhandledFrame: 'bypass', quiet: true, serviceWorker: { url: '/mockServiceWorker.js' } })` e `interceptVcfDownloads()`. A captura do VCF (`mocks/vcf-download.ts`) impede a navegação nos links `/api/public/(cards|profiles)/:x/contact.vcf` da mesma origem, pede o ficheiro com `fetch` e entrega-o como Blob com o nome do `Content-Disposition`; não toca em cliques com modificadores nem já tratados. `startMockApi` ainda não é chamado por ninguém: falta `main.tsx` (T-FE-05).
 - Comportamentos implementados no bloco 7 (público): `GET /api/public/cards/:token` e `/api/public/profiles/:slug` só respondem a cartões `active` com perfil (pelo endereço amigável, o perfil precisa de um cartão ativo) e devolvem a vista pública (nome sempre público, restantes campos conforme a visibilidade, só contactos e redes `isPublic`), com `Cache-Control: public, max-age=60`; tudo o resto, incluindo tokens mal formados, dá o mesmo 404 `not_found`. O VCF é `text/vcard; charset=utf-8`, `Content-Disposition: attachment; filename="<slug>.vcf"`, gerado por `mocks/vcard.ts` (vCard 4.0: escape de `\`, `,`, `;` e quebras de linha, remoção de caracteres de controlo, linhas dobradas a 75 octetos, `N` com o último nome como apelido, telefones só em E.164 sem repetições, redes em `X-SOCIALPROFILE`, link do cartão em `URL;TYPE=x-nfc-card`, sem fotografia). `POST /api/public/events` exige o token CSRF, valida a lista fechada, responde sempre 204 e deduplica 30 minutos por cartão e tipo (não por IP, que a simulação não conhece); o limite de 60 pedidos por minuto por IP também não é simulado.
 - Comportamentos implementados no bloco 6: estatísticas com `from` e `to` obrigatórios (intervalo até 366 dias, senão 400), base determinística por cartão e dia (`demoWeight`, menos atividade ao fim de semana, nada no futuro nem antes da criação do cartão) somada aos contadores registados; cartões visíveis segundo o papel (platform_admin todos, com `byCompany` e filtro `companyId`; empresa; o dono só os cartões dos seus perfis); `cardId` fora dos visíveis dá 404 e `companyId` sem `analytics.filterByCompany` dá 403. Auditoria: platform_admin vê tudo, company_admin só a sua empresa; filtros `action`, `actor` (nome ou email, sem maiúsculas) e `from`/`to` por dia civil local; `from` > `to` dá 400. Nos testes, `signIn` regista um `auth.login` na auditoria, e as contagens contam com isso.
 - Comportamentos implementados no bloco 5 (envio de contacto): o perfil tem de ser visível para o utilizador (as regras de posse dos perfis, senão 404) e ter cartão ativo (409 `profile_without_card`); só os envios aceites contam para os limites (10 por hora, scope `hour`; 50 por dia, scope `day`; sem limite por empresa, por não haver valor definido); o envio guarda apenas `recipientMasked`, incrementa o contador `contactsSent` do cartão ativo no dia civil local e regista `contact.sent`; o histórico mostra os envios dos perfis visíveis (o dono vê os dos seus perfis, mesmo feitos por outros), com filtro `profileId` (404 se não for visível) e paginação.
@@ -119,7 +121,7 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
 - Próxima tarefa, por ordem:
   1. Feito: `packages/shared/src/images.ts`, `mocks/vcard.ts`, `handlers/{auth,uploads,companies,members,cards,profiles,contact-shares,analytics,audit,public,index}.ts`.
   2. Feito: `handlers/index.ts`.
-  3. `mocks/browser.ts` (inclui a captura do clique no link do VCF) e `mocks/server.ts`; ligar o servidor MSW em `src/test/setup.ts`.
-  4. Componentes base, router, guards, layout, páginas de erro e `main.tsx`.
+  3. Feito: `mocks/browser.ts`, `mocks/vcf-download.ts`, `mocks/server.ts` e a ligação em `src/test/setup.ts`.
+  4. T-FE-05: componentes base, router, guards, layout, páginas de erro e `main.tsx` (com `if (__API_MOCKING__) await (await import('@/mocks/browser')).startMockApi()` antes de montar a aplicação).
   5. `docs/codebase-graph.md`, ADR-0009, atualização dos ADR-0004 e 0005 e de `docs/requirements.md`.
 - Passos para retomar: ver `README.md` (instalação) e depois correr `pnpm typecheck`, `pnpm lint` e `pnpm test` antes de continuar.
