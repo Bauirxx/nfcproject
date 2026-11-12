@@ -31,6 +31,7 @@ Nenhuma tarefa cumpre ainda a Definition of Done. O que existe e está verificad
 - Mecânica comum dos handlers da API simulada (CSRF, sessão, permissões, validação, limites): 7 testes a passar.
 - Handlers de autenticação e conta da API simulada (`handlers/auth.ts`): 34 testes a passar.
 - Handlers de uploads, empresas e membros da API simulada (`handlers/{uploads,companies,members}.ts`): 32 testes a passar.
+- Handlers de cartões da API simulada (`handlers/cards.ts`): 18 testes a passar.
 
 ## Em curso
 
@@ -39,7 +40,7 @@ Nenhuma tarefa cumpre ainda a Definition of Done. O que existe e está verificad
 | T-FE-01 Base do projeto | Em desenvolvimento | Faltam `main.tsx`, `playwright.config.ts` e `scripts/check-bundle-size.mjs` |
 | T-FE-02 Pacote partilhado | Em testes | Inclui `images.ts` (magic bytes de JPEG, PNG e WebP); falta registar no grafo |
 | T-FE-03 Cliente da API | Em testes | Código e testes prontos; falta atualizar ADR-0004 e ADR-0005 |
-| T-FE-04 API simulada (MSW) | Em desenvolvimento | Feitos `credentials.ts`, `totp.ts`, `db.ts`, `seed.ts`, `domain.ts`, `handlers/{http,testing,auth,uploads,companies,members}.ts`; faltam cards, profiles, contact-shares, analytics e audit, public, `handlers/index.ts`, `browser.ts`, `server.ts` |
+| T-FE-04 API simulada (MSW) | Em desenvolvimento | Feitos `credentials.ts`, `totp.ts`, `db.ts`, `seed.ts`, `domain.ts`, `handlers/{http,testing,auth,uploads,companies,members,cards}.ts`; faltam profiles, contact-shares, analytics e audit, public, `handlers/index.ts`, `browser.ts`, `server.ts` |
 | T-FE-05 Estrutura do painel | Planeada | Router, guards, layout, páginas de erro |
 
 ## Pendentes
@@ -70,19 +71,21 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
 - 2026-11-12: cliente da API e testes; textos centralizados (`shared/i18n`); início da API simulada; primeiro commit no GitHub.
 - 2026-11-12: handlers de autenticação e conta da API simulada (sessão, login, MFA, recuperação, convite, conta, sessões) com 34 testes; `endCurrentSession` no domínio; helper `handlers/testing.ts` para os testes dos handlers.
 - 2026-11-12: handlers de uploads (URL assinado, magic bytes, `consumeUpload`), empresas e membros com 32 testes; `inviteUser` e `emailTaken` no domínio; `uploadImage` no helper de testes.
+- 2026-11-12: handlers de cartões (lista com pesquisa, filtro e paginação; criar; editar; ativar, desativar, perdido e bloquear; histórico) com 18 testes.
 
 ## Estado dos testes
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 186 testes a passar (82 em `packages/shared`, 104 em `apps/web`).
+- `pnpm test`: 204 testes a passar (82 em `packages/shared`, 122 em `apps/web`).
 - Playwright: ainda sem testes. Sem verificação de build nem de tamanho do bundle.
 
 ## Registo de continuidade
 
-- Última tarefa: T-FE-04, API simulada — handlers por módulo (blocos 1 e 2 concluídos: autenticação; uploads, empresas e membros).
-- Ficheiros envolvidos: `apps/web/src/mocks/handlers/{http,testing,auth,uploads,companies,members}.ts` (cada um com o seu `.test.ts`, exceto `testing.ts`), `apps/web/src/mocks/domain.ts` (`endCurrentSession`, `inviteUser`, `emailTaken`).
-- Estado exato: handlers de `/api/auth/*`, `/api/uploads/*`, `/api/companies*` e `/api/members*` escritos e testados. Faltam cards, profiles, contact-shares, analytics, audit e public; `handlers/index.ts`, `browser.ts` e `server.ts` não existem.
+- Última tarefa: T-FE-04, API simulada — handlers por módulo (blocos 1 a 3 concluídos: autenticação; uploads, empresas e membros; cartões).
+- Ficheiros envolvidos: `apps/web/src/mocks/handlers/{http,testing,auth,uploads,companies,members,cards}.ts` (cada um com o seu `.test.ts`, exceto `testing.ts`), `apps/web/src/mocks/domain.ts` (`endCurrentSession`, `inviteUser`, `emailTaken`).
+- Estado exato: handlers de `/api/auth/*`, `/api/uploads/*`, `/api/companies*`, `/api/members*` e `/api/cards*` escritos e testados. Faltam profiles, contact-shares, analytics, audit e public; `handlers/index.ts`, `browser.ts` e `server.ts` não existem.
+- Comportamentos implementados no bloco 3 (cartões): a lista vem ordenada por `updatedAt` decrescente e a pesquisa cobre a etiqueta e o nome do perfil; o perfil referido em `profileId` tem de ser da mesma empresa (senão 404); cada alteração acrescenta uma entrada ao histórico (`updated`, `profile_linked`, `profile_unlinked`) e uma entrada `card.updated` na auditoria, nada quando não há alterações; desassociar o perfil de um cartão ativo dá 409 `card_without_profile`; o histórico vem do mais recente para o mais antigo, com empates pela ordem inversa de registo.
 - Comportamentos implementados no bloco 2: `POST /api/uploads/sign` exige a permissão de quem edita o destino (`profiles.edit`, `themes.manage` ou `companies.manage`) e responde 200 com `uploadUrl` = `/api/uploads/<fileId>`; o `PUT` só aceita o ficheiro uma vez, do próprio utilizador, com o tamanho anunciado (422 `invalid_file`), até 2 MB (413 `file_too_large`) e com magic bytes e cabeçalho iguais ao tipo anunciado (415 `unsupported_file_type`); `consumeUpload` entrega o `dataUrl` uma única vez ou dá 422 `invalid_file`. Criar empresa convida o primeiro administrador (`adminEmail`, P-09) e regista `company.created` e `member.invited` com o `companyId` da nova empresa; emails são únicos na plataforma (409 `already_member`). Membros: o próprio não muda o seu papel nem se remove (409 `cannot_change_self`), o que garante que nunca fica uma empresa sem administrador, por isso o código `last_admin` previsto não é necessário e não existe; remover um membro termina as suas sessões, apaga os convites e liberta os perfis de que era dono.
 - Comportamentos implementados em `handlers/auth.ts` (além dos decididos abaixo): o login substitui a sessão anterior deste browser; `mfa/verify` também tem limite de 5 tentativas por minuto por utilizador; `recover` cria um link novo sem invalidar os anteriores (facilita a demonstração); `refresh` mantém o token CSRF; `mfa/setup` com MFA já ativo dá 409 `mfa_already_enabled`; `mfa/confirm` sem configuração iniciada dá 409 `mfa_not_pending` e código errado 422 `invalid_code`; `mfa/disable` sem MFA dá 409 `mfa_not_enabled`; `account`, `password` e `sessions` exigem `account.manage` (administradores sem MFA recebem 403 `mfa_setup_required`).
 - Para testar handlers: `useMockServer(handlers)`, `signIn(userId)`, `api(method, path, body?)` e `errorCode(response)` em `handlers/testing.ts`.
@@ -100,8 +103,8 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
   - Uploads: `POST /api/uploads/sign` devolve `/api/uploads/<fileId>`; o `PUT` valida tamanho e magic bytes com `detectImageType`.
 - Verificado no ambiente de testes (Vitest com jsdom): o MSW resolve URLs relativos, aceita `AbortSignal`, corpos `Blob` e respostas lançadas pelos resolvers. No MSW 3 a opção chama-se `onUnhandledFrame` (não `onUnhandledRequest`).
 - Próxima tarefa, por ordem:
-  1. Feito: `packages/shared/src/images.ts`, `handlers/auth.ts`, `handlers/uploads.ts`, `handlers/companies.ts`, `handlers/members.ts`.
-  2. `apps/web/src/mocks/handlers/` por módulo, cada um com testes: cards, profiles, contact-shares, analytics e audit, public (inclui gerador de vCard 4.0 com escape), index.
+  1. Feito: `packages/shared/src/images.ts`, `handlers/{auth,uploads,companies,members,cards}.ts`.
+  2. `apps/web/src/mocks/handlers/` por módulo, cada um com testes: profiles, contact-shares, analytics e audit, public (inclui gerador de vCard 4.0 com escape), index.
   3. `mocks/browser.ts` (inclui a captura do clique no link do VCF) e `mocks/server.ts`; ligar o servidor MSW em `src/test/setup.ts`.
   4. Componentes base, router, guards, layout, páginas de erro e `main.tsx`.
   5. `docs/codebase-graph.md`, ADR-0009, atualização dos ADR-0004 e 0005 e de `docs/requirements.md`.
