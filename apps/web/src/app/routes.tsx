@@ -5,6 +5,8 @@ import { MfaSetupPage } from '@/features/auth/mfa-setup-page';
 import { MfaVerifyPage } from '@/features/auth/mfa-verify-page';
 import { RecoverPasswordPage } from '@/features/auth/recover-password-page';
 import { ResetPasswordPage } from '@/features/auth/reset-password-page';
+import { CardDetailPage } from '@/features/cards/card-detail-page';
+import { CardsPage } from '@/features/cards/cards-page';
 import { navTexts } from '@/shared/i18n/panel/nav';
 import { AppShell } from './app-shell';
 import { ForbiddenPage, NotFoundPage, ServerErrorPage, SessionExpiredPage } from './error-pages';
@@ -64,8 +66,8 @@ export const routes: RouteObject[] = [
               {
                 element: <RequirePermission permission="cards.view" />,
                 children: [
-                  { path: 'cartoes', element: <PlaceholderPage title={navTexts.items.cards} /> },
-                  { path: 'cartoes/:id', element: <PlaceholderPage title={navTexts.items.cards} /> },
+                  { path: 'cartoes', element: <CardsPage /> },
+                  { path: 'cartoes/:id', element: <CardDetailPage /> },
                 ],
               },
               {

@@ -8,6 +8,8 @@ export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   /** Código de validação já traduzido; marca o campo como inválido e liga o `aria-describedby`. */
   error?: string;
   description?: string;
+  /** Não mostrar a marca «Opcional» (por exemplo, em filtros). */
+  hideOptional?: boolean;
   ref?: Ref<HTMLInputElement>;
 }
 
@@ -15,7 +17,7 @@ export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
  * Campo de texto com rótulo, descrição e erro ligados por `aria-describedby`/`aria-invalid`.
  * Pensado para o React Hook Form: `<TextField label="Email" {...register('email')} error={...} />`.
  */
-export function TextField({ label, error, description, required, id, ref, ...props }: TextFieldProps) {
+export function TextField({ label, error, description, required, hideOptional, id, ref, ...props }: TextFieldProps) {
   const autoId = useId();
   const fieldId = id ?? autoId;
   const descriptionId = description ? `${fieldId}-desc` : undefined;
@@ -26,7 +28,7 @@ export function TextField({ label, error, description, required, id, ref, ...pro
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={fieldId}>
         {label}
-        {required ? null : (
+        {required || hideOptional ? null : (
           <span className="ml-2 text-xs font-normal text-muted-foreground">{commonTexts.states.optional}</span>
         )}
       </Label>

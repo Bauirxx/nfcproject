@@ -109,6 +109,9 @@ Testes: `totp.test.ts`, `vcard.test.ts`, `vcf-download.test.ts`, `handlers/*.tes
 | `app/nav-items.ts`, `app/use-sign-out.ts`, `app/placeholder-page.ts` | `navItems`, `useSignOut`, `PlaceholderPage` | `i18n/panel/nav`, `api/client`, `endpoints` |
 | `shared/components/ui/{button,spinner,skeleton,toaster,toast-store}` | `Button`/`buttonVariants`, `Spinner`, `Skeleton`, `Toaster`, `toast` | `lib/cn`, `i18n/panel/common`, `@radix-ui/react-slot`, `class-variance-authority`, `lucide-react` |
 | `shared/components/ui/{input,label,text-field,password-field,card,alert,qr-code}` | `Input`, `Label`, `TextField`, `PasswordField`, `Card*`, `Alert`, `QrCode` | `lib/cn`, `i18n/panel/common`, `lucide-react`, `uqr` (só `qr-code`) |
+| `shared/components/ui/{dialog,confirm-dialog,page-header,badge,empty-state,error-state,table,pagination,select}` | `Dialog` (modal sem Radix) e `ConfirmDialog`, `PageHeader`, `Badge`, `EmptyState`, `ErrorState`, `Table*`, `Pagination`, `Select`/`SelectField` | `lib/cn`, `hooks/use-scroll-lock`, `i18n/{errors,panel/common}`, `lucide-react` |
+| `shared/hooks/{use-scroll-lock,use-debounced-value,use-document-title}` | hooks utilitários | `i18n/panel/common` (título) |
+| `shared/lib/{qr,download}` | `qrSvgMarkup`, `downloadBlob`/`downloadText` | `uqr` (`qr`) |
 | `shared/i18n/panel/*` | `commonTexts`, `navTexts`, `errorPageTexts`, `authTexts` | — |
 | `shared/lib/theme-preference.ts` | tema em `localStorage` (única exceção) e classe `dark` | — |
 | `test/utils.tsx` | `renderApp`, `renderWithProviders`, `makeTestClient` | `providers`, `routes`, `mocks/handlers/testing` |
@@ -121,14 +124,15 @@ Testes: `app/{app-shell,error-pages,theme-toggle,session-events}.test.tsx`.
 |---------|----------|------------|--------|
 | `features/auth/` (`auth-layout`, `from-state`, `use-url-token`, `schemas`, `login-page`, `mfa-verify-page`, `mfa-setup-page`, `recover-password-page`, `reset-password-page`, `accept-invite-page`) | Ecrãs de autenticação; substituem os `PlaceholderPage` das rotas de auth | `api/client`/`lib/parsed-api`, `endpoints`, `shared/schemas`, `shared/components/ui/*`, `app/session-events`, `react-hook-form`, `@hookform/resolvers/zod` | T-FE-06 |
 | `features/public-card/` (`mount`, `public-card-page`, `parse-public-card`, `public-events`, `public-qr`) | Página pública leve (ADR-0003): fetch, estados, página neutra, ações saneadas, eventos, QR por `import()`, partilha | `api/client`, `endpoints`, `i18n/public`, `@nfc-business/shared/{links,constants,contrast,validators}`, tipos de `/schemas`, `uqr` (dinâmico) | T-FE-10 |
+| `features/cards/` (`queries`, `cards-page`, `card-create-dialog`, `card-detail-page`, `card-status-badge`, `qr-download`) | Lista (pesquisa/filtro/paginação), criação, detalhe (chip URL, QR PNG/SVG, perfil, ações de estado, histórico) | `lib/parsed-api`, `endpoints`, `shared/schemas`, `shared/components/ui/*`, `app/session`, `shared/lib/{qr,download}` | T-FE-12/13 |
 
-Testes: `features/auth/*.test.tsx`, `features/public-card/public-card-page.test.tsx`. Regra do bundle público verificada no build (secção 6).
+Testes: `features/auth/*.test.tsx`, `features/public-card/public-card-page.test.tsx`, `features/cards/*.test.tsx`. Regra do bundle público verificada no build (secção 6).
 
 ### 3.5 Planeado (inferido, sem código)
 
 | Caminho | Conteúdo previsto | Tarefas |
 |---------|-------------------|---------|
-| `src/features/{cards,profiles,contact-sending,companies,members,analytics,themes,audit}/` | Ecrãs por funcionalidade (substituem os `PlaceholderPage`) | T-FE-12 a T-FE-25 |
+| `src/features/{profiles,contact-sending,companies,members,analytics,themes,audit}/` | Ecrãs por funcionalidade (substituem os `PlaceholderPage`) | T-FE-14 a T-FE-25 |
 | Envio do dono na página pública | Botão e painel de envio a pedido | T-FE-11 |
 | `e2e/`, `playwright.config.ts` | Cinco fluxos principais contra o build com CSP | T-FE-27 |
 | `scripts/check-bundle-size.mjs` | Orçamento de JavaScript da página pública | T-FE-28 |

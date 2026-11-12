@@ -28,6 +28,7 @@ Cumprem a Definition of Done:
 - T-FE-05 Estrutura do painel: router por objetos (`app/routes.tsx`) com guards por sessão, MFA e permissão, casca responsiva (`app/app-shell.tsx`) com menu por papel e seletor de tema, páginas de erro 403/404/500/sessão expirada, cliente do TanStack Query com avisos (toasts), sessão sobre `['session']` e `main.tsx` a arrancar a API simulada e a carregar o painel por `import()`. Os ecrãs internos são provisórios (`PlaceholderPage`) até às tarefas seguintes. 13 testes; build de produção verificado.
 - T-FE-06 Autenticação: login, verificação MFA (TOTP e código de recuperação), configuração de MFA (QR local com `uqr` desenhado em SVG + chave manual + códigos de recuperação mostrados uma vez), recuperação e definição de palavra-passe (token do URL, retirado do endereço) e aceitar convite, sobre a API simulada e com respostas validadas por `apiParsed`. 19 testes.
 - T-FE-10 Página pública (cartão por token `/c/:token` e perfil por endereço amigável `/p/:slug`): render estático e leve a partir de `main.tsx`, página neutra «Cartão indisponível» para tudo o que não seja um cartão ativo com perfil, ações (VCF, Ligar, WhatsApp, Email, Website, Localização) e redes sociais a partir de dados saneados, tema do perfil aplicado por estilos inline, eventos públicos (`view`, `whatsapp_click`, `email_click`, `vcf_download`), QR a pedido (`uqr` por `import()`) e partilha (`navigator.share` com cópia de link). 4 testes. Build confirmado: chunk inicial 78 KB gzip (sem router/TanStack Query/RHF/Zod); painel e QR carregam à parte. Falta o envio do dono (T-FE-11).
+- T-FE-12/13 Cartões: lista com pesquisa (debounce), filtro por estado e paginação; criação (com perfil opcional); detalhe com endereço do chip (copiar), QR Code no ecrã e transferência em PNG e SVG, associação de perfil, ações de estado (ativar/desativar/perdido/bloquear) com confirmação nas irreversíveis e histórico. 8 testes (inclui `qr.test.ts`).
 
 O que mais existe e está verificado:
 
@@ -53,7 +54,8 @@ O que mais existe e está verificado:
 | T-FE-01 Base do projeto | Em revisão | `main.tsx` feito; faltam `playwright.config.ts` (T-FE-27) e `scripts/check-bundle-size.mjs` (T-FE-28) |
 | T-FE-03 Cliente da API | Em revisão | Código, testes e ADR-0005 prontos; `lib/parsed-api.ts` ganha teste com o primeiro consumidor (T-FE-06) |
 | T-FE-04 API simulada (MSW) | Em revisão | Código, testes, ADR-0009 e grafo prontos; `main.tsx` chama `startMockApi`; falta confirmar o worker no browser real (ao abrir `pnpm dev`) |
-| T-FE-11 Envio do dono na página pública | Planeada | Botão «Enviar o meu contacto» só com sessão e perfil do próprio; painel de envio carregado a pedido (próxima tarefa) |
+| T-FE-14/15/16 Perfis | Planeada | Lista, editor (campos, contactos ordenáveis, visibilidade, foto com recorte) e tema (próxima tarefa) |
+| T-FE-11 Envio do dono na página pública | Planeada | Depende do formulário de envio (T-FE-17, passo 5) |
 
 ## Pendentes
 
@@ -95,6 +97,7 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 - 2026-11-12: `handlers/index.ts` junta todos os handlers e responde 404 `not_found` a qualquer outro `/api/*`, com 3 testes (inclui a verificação de que não há método e caminho repetidos).
 - 2026-11-12: documentação da T-FE-04: ADR-0009 (estratégia de testes e API simulada), `docs/codebase-graph.md`, pressupostos P-09 a P-11 e estados das tarefas em `docs/requirements.md`, complementos aos ADR-0004 (códigos de erro) e ADR-0005 (renovação, `refreshable`, CSRF).
 - 2026-11-12: `mocks/server.ts` ligado em `src/test/setup.ts` (todos os testes correm sobre a API simulada completa; `useMockServer` passou a acrescentar rotas ao servidor global antes de cada teste), `mocks/browser.ts` (`startMockApi`) e `mocks/vcf-download.ts` com 5 testes.
+- 2026-11-12: T-FE-12/13 — cartões. Componentes base de listas/detalhe (`dialog` acessível sem Radix + `use-scroll-lock`, `confirm-dialog`, `page-header`, `badge`, `empty-state`, `error-state`, `table`, `pagination`, `select`); `features/cards` (queries, lista, criação, detalhe, badge de estado, descarga de QR); `shared/lib/{qr,download}`; hooks `use-debounced-value` e `use-document-title`; marca «Opcional» agora desligável (`hideOptional`) para filtros. 8 testes.
 - 2026-11-12: T-FE-10 — página pública. `main.tsx` ramifica por caminho e importa estaticamente `features/public-card/mount` (import relativo); `public-card-page` (fetch + estados carregar/indisponível/pronto), `parse-public-card` (guarda de tipo sem Zod + saneamento de cores), `public-events` (lista fechada) e `public-qr` (uqr por `import()`). Chunk inicial 78 KB gzip. 4 testes.
 - 2026-11-12: T-FE-06 (completa) — configuração de MFA (QR local `uqr` em SVG via `shared/components/ui/qr-code.tsx`, chave manual e códigos de recuperação mostrados uma vez), recuperação e definição de palavra-passe (token lido do URL com `useUrlToken` e retirado do endereço) e aceitar convite. Schemas de formulário (`features/auth/schemas.ts`) com confirmação de palavra-passe. Mais 13 testes.
 - 2026-11-12: T-FE-06 (parcial) — login e verificação MFA. Componentes de formulário (`input`, `label`, `text-field`, `password-field`, `card`, `alert`), textos de autenticação, `AuthLayout`, `LoginPage` e `MfaVerifyPage` (TOTP e código de recuperação) sobre a API simulada, com `apiParsed` a validar as respostas. Rótulos marcam o campo opcional (não o obrigatório). 6 testes.
@@ -104,14 +107,15 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 305 testes a passar (82 em `packages/shared`, 223 em `apps/web`).
+- `pnpm test`: 313 testes a passar (82 em `packages/shared`, 231 em `apps/web`).
 - `pnpm --filter @nfc-business/web build`: a passar; API simulada fora do bundle; chunk inicial da página pública 78 KB gzip (< 100 KB), sem router/TanStack Query/RHF/Zod (confirmado por `Select-String` no chunk).
 - Playwright: ainda sem testes. Falta o `scripts/check-bundle-size.mjs` (T-FE-28).
 
 ## Registo de continuidade
 
-- Última tarefa: T-FE-10, página pública — concluída (cartão/perfil, página neutra, eventos, QR a pedido, partilha), 4 testes, orçamento do bundle confirmado. Ficheiros: `apps/web/src/features/public-card/*` e `apps/web/src/main.tsx` (agora ramifica por caminho).
-- Tarefa anterior: T-FE-06, autenticação — concluída (login, MFA verificar/configurar, recuperar/definir palavra-passe, aceitar convite), 19 testes.
+- Última tarefa: T-FE-12/13, cartões — concluída (lista com pesquisa/filtro/paginação, criação, detalhe com chip URL, QR PNG/SVG, associação de perfil, ações de estado com confirmação, histórico). Ficheiros: `apps/web/src/features/cards/*`, novos componentes em `apps/web/src/shared/components/ui/*`, `apps/web/src/shared/lib/{qr,download}.ts`, hooks em `apps/web/src/shared/hooks/*`.
+- Componentes partilhados criados aqui e reutilizáveis por perfis/membros/etc.: `Dialog` (modal acessível sem Radix, com armadilha de foco e `use-scroll-lock`), `ConfirmDialog`, `PageHeader`, `Badge`, `EmptyState`, `ErrorState`, `Table`/`THead`/`TBody`/`Tr`/`Th`/`Td`, `Pagination`, `Select`/`SelectField`, `Input`, `TextField`/`PasswordField` (com `hideOptional`).
+- Tarefa anterior: T-FE-10, página pública — concluída, 4 testes, orçamento do bundle confirmado.
 - Ficheiros da T-FE-06: `apps/web/src/features/auth/*` (auth-layout, from-state, use-url-token, schemas, login-page, mfa-verify-page, mfa-setup-page, recover-password-page, reset-password-page, accept-invite-page + testes), `apps/web/src/shared/components/ui/{input,label,text-field,password-field,card,alert,qr-code}`, `apps/web/src/shared/i18n/panel/auth.ts`, entradas novas em `shared/i18n/panel/common.ts` e `shared/i18n/errors.ts`.
 - Notas de implementação da T-FE-06: as respostas são validadas por `apiParsed`; o QR do MFA é desenhado em SVG a partir da matriz de `uqr.encode` (sem `dangerouslySetInnerHTML`); os rótulos dos campos marcam o *opcional*, não o obrigatório (não poluir o nome acessível); depois de confirmar o MFA, a sessão em cache é corrigida (`mfaEnabled: true`) antes de ir para o painel; `useUrlToken` lê o `?token=` uma vez (inicializador de `useState`) e retira-o do URL.
 - Última tarefa anterior: T-FE-05, estrutura do painel — concluída, com build de produção verificado.
@@ -140,9 +144,11 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
   - Estatísticas: base determinística por cartão e dia, mais os contadores registados.
   - Uploads: `POST /api/uploads/sign` devolve `/api/uploads/<fileId>`; o `PUT` valida tamanho e magic bytes com `detectImageType`.
 - Verificado no ambiente de testes (Vitest com jsdom): o MSW resolve URLs relativos, aceita `AbortSignal`, corpos `Blob` e respostas lançadas pelos resolvers. No MSW 3 a opção chama-se `onUnhandledFrame` (não `onUnhandledRequest`).
-- Próxima tarefa — T-FE-11 (envio do dono na página pública), por ordem sugerida:
-  1. Na página pública, se houver sessão iniciada e o utilizador for dono deste perfil, mostrar o botão «Enviar o meu contacto». Deteção de posse sem expor dados privados: com sessão, pedir `GET /api/profiles` (via `apiFetch`, guarda de tipo leve) e verificar se algum perfil do utilizador tem `activeCardToken === id` (cartão) ou `slug === id` (perfil); guardar o `profileId` correspondente.
-  2. O painel de envio é carregado a pedido (`import()` dinâmico) num chunk à parte — pode usar TanStack Query/RHF/Zod e os componentes do painel, pois já não está no bundle inicial (o ESLint só restringe os imports estáticos dos ficheiros de `features/public-card/**`, por isso este painel deve ficar noutra pasta, por exemplo `features/contact-sending/public-entry.tsx`, com os seus próprios `QueryClientProvider` e `Toaster`). `SendContactForm` tem de ser reutilizável e sem router.
-  3. Reaproveitar o `SendContactForm` na T-FE-17 (envio no painel).
-- Alternativa: se a T-FE-11 ficar para depois, seguir para a T-FE-12/13 (cartões) e T-FE-14/15/16 (perfis), que é o passo 4 da ordem de trabalho.
+- Próxima tarefa — T-FE-14/15/16 (perfis), por ordem sugerida:
+  1. `features/profiles/queries.ts`: `useProfilesQuery` (lista com pesquisa e paginação; cuidado com `z.coerce` — usar um tipo de params concreto como em `cards/queries.ts`), `useProfileQuery`, `useCreateProfile`, `useUpdateProfile`. Endpoints em `endpoints.profiles`.
+  2. `ProfilesPage` (lista + pesquisa + criar) e `ProfileEditorPage` (`/painel/perfis/:id`): campos (nome, cargo, empresa, bio) com pré-visualização do telefone (`formatPhoneDisplay`/`normalizePhone` de `@nfc-business/shared/links`/`validators`), contactos com reordenação por arrastar (dnd-kit) **e** por botões cima/baixo (WCAG 2.5.7), interruptor de visibilidade por campo e por contacto, redes sociais, e foto com validação no cliente (MIME, magic bytes com `detectImageType`, 2 MB, dimensões) e recorte.
+  3. Tema do perfil (T-FE-23 pode vir aqui ou separado): editor de cores com verificação de contraste AA que bloqueia guardar (`meetsContrast` de `@nfc-business/shared/contrast`; o schema `profileThemeInputSchema` já valida).
+  4. Uploads: `POST /api/uploads/sign` → `PUT` do ficheiro; usar o `fileId` em `photoFileId`/`theme.logoFileId`. Ver o fluxo em `handlers/uploads.ts` e o helper de testes `uploadImage`.
+  5. Testes esperados: `ProfileEditorPage`, `SortableList`, `image-validation`, `PhotoCropDialog`, `ThemeEditor`, `contrast` (este último já existe no pacote partilhado).
+- T-FE-11 (envio do dono na página pública) fica para o passo 5 (envio de contacto, T-FE-17), quando existir o `SendContactForm` reutilizável; o plano está no histórico deste ficheiro.
 - Passos para retomar: ver `README.md` (instalação) e depois correr `pnpm typecheck`, `pnpm lint` e `pnpm test` antes de continuar. Node 24 ativo (`nvm use 24.22.2`).
