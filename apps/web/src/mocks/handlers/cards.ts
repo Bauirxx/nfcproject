@@ -40,7 +40,7 @@ const AUDIT_OF: Record<CardAction, AuditAction> = {
   block: 'card.blocked',
 };
 
-function profileNameOf(db: MockDb, profileId: string | null): string | null {
+export function profileNameOf(db: MockDb, profileId: string | null): string | null {
   if (profileId === null) return null;
   return db.profiles.find((profile) => profile.id === profileId)?.displayName ?? null;
 }

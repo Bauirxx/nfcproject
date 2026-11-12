@@ -34,6 +34,7 @@ Nenhuma tarefa cumpre ainda a Definition of Done. O que existe e está verificad
 - Handlers de cartões da API simulada (`handlers/cards.ts`): 18 testes a passar.
 - Handlers de perfis da API simulada (`handlers/profiles.ts`): 18 testes a passar.
 - Handlers de envio de contacto da API simulada (`handlers/contact-shares.ts`): 12 testes a passar.
+- Handlers de estatísticas e auditoria da API simulada (`handlers/{analytics,audit}.ts`): 15 testes a passar.
 
 ## Em curso
 
@@ -42,7 +43,7 @@ Nenhuma tarefa cumpre ainda a Definition of Done. O que existe e está verificad
 | T-FE-01 Base do projeto | Em desenvolvimento | Faltam `main.tsx`, `playwright.config.ts` e `scripts/check-bundle-size.mjs` |
 | T-FE-02 Pacote partilhado | Em testes | Inclui `images.ts` (magic bytes de JPEG, PNG e WebP); falta registar no grafo |
 | T-FE-03 Cliente da API | Em testes | Código e testes prontos; falta atualizar ADR-0004 e ADR-0005 |
-| T-FE-04 API simulada (MSW) | Em desenvolvimento | Feitos `credentials.ts`, `totp.ts`, `db.ts`, `seed.ts`, `domain.ts`, `handlers/{http,testing,auth,uploads,companies,members,cards,profiles,contact-shares}.ts`; faltam analytics e audit, public, `handlers/index.ts`, `browser.ts`, `server.ts` |
+| T-FE-04 API simulada (MSW) | Em desenvolvimento | Feitos `credentials.ts`, `totp.ts`, `db.ts`, `seed.ts`, `domain.ts`, `handlers/{http,testing,auth,uploads,companies,members,cards,profiles,contact-shares,analytics,audit}.ts`; faltam public, `handlers/index.ts`, `browser.ts`, `server.ts` |
 | T-FE-05 Estrutura do painel | Planeada | Router, guards, layout, páginas de erro |
 
 ## Pendentes
@@ -76,19 +77,21 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
 - 2026-11-12: handlers de cartões (lista com pesquisa, filtro e paginação; criar; editar; ativar, desativar, perdido e bloquear; histórico) com 18 testes.
 - 2026-11-12: handlers de perfis (lista com pesquisa e posse, criação com endereço amigável único, edição de campos, contactos, redes sociais, visibilidade, dono, fotografia e tema com logótipo) com 18 testes.
 - 2026-11-12: handlers de envio de contacto (registo com destinatário mascarado, limites por hora e por dia, evento `contactsSent`, auditoria, histórico com posse) com 12 testes; `bumpCounter` e `counterKey` no domínio.
+- 2026-11-12: handlers de estatísticas (série diária determinística mais eventos registados, por cartão e por empresa, com posse e filtros) e de auditoria (filtros por ação, autor e datas; isolamento por empresa) com 15 testes.
 
 ## Estado dos testes
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 234 testes a passar (82 em `packages/shared`, 152 em `apps/web`).
+- `pnpm test`: 249 testes a passar (82 em `packages/shared`, 167 em `apps/web`).
 - Playwright: ainda sem testes. Sem verificação de build nem de tamanho do bundle.
 
 ## Registo de continuidade
 
-- Última tarefa: T-FE-04, API simulada — handlers por módulo (blocos 1 a 5 concluídos: autenticação; uploads, empresas e membros; cartões; perfis; envio de contacto).
-- Ficheiros envolvidos: `apps/web/src/mocks/handlers/{http,testing,auth,uploads,companies,members,cards,profiles,contact-shares}.ts` (cada um com o seu `.test.ts`, exceto `testing.ts`), `apps/web/src/mocks/domain.ts` (`endCurrentSession`, `inviteUser`, `emailTaken`, `bumpCounter`, `counterKey`).
-- Estado exato: handlers de `/api/auth/*`, `/api/uploads/*`, `/api/companies*`, `/api/members*`, `/api/cards*`, `/api/profiles*` e `/api/contact-shares` escritos e testados. Faltam analytics, audit e public; `handlers/index.ts`, `browser.ts` e `server.ts` não existem.
+- Última tarefa: T-FE-04, API simulada — handlers por módulo (blocos 1 a 6 concluídos: autenticação; uploads, empresas e membros; cartões; perfis; envio de contacto; estatísticas e auditoria).
+- Ficheiros envolvidos: `apps/web/src/mocks/handlers/{http,testing,auth,uploads,companies,members,cards,profiles,contact-shares,analytics,audit}.ts` (cada um com o seu `.test.ts`, exceto `testing.ts`), `apps/web/src/mocks/domain.ts` (`endCurrentSession`, `inviteUser`, `emailTaken`, `bumpCounter`, `counterKey`).
+- Estado exato: handlers de `/api/auth/*`, `/api/uploads/*`, `/api/companies*`, `/api/members*`, `/api/cards*`, `/api/profiles*`, `/api/contact-shares`, `/api/analytics/summary` e `/api/audit` escritos e testados. Falta public; `handlers/index.ts`, `browser.ts` e `server.ts` não existem.
+- Comportamentos implementados no bloco 6: estatísticas com `from` e `to` obrigatórios (intervalo até 366 dias, senão 400), base determinística por cartão e dia (`demoWeight`, menos atividade ao fim de semana, nada no futuro nem antes da criação do cartão) somada aos contadores registados; cartões visíveis segundo o papel (platform_admin todos, com `byCompany` e filtro `companyId`; empresa; o dono só os cartões dos seus perfis); `cardId` fora dos visíveis dá 404 e `companyId` sem `analytics.filterByCompany` dá 403. Auditoria: platform_admin vê tudo, company_admin só a sua empresa; filtros `action`, `actor` (nome ou email, sem maiúsculas) e `from`/`to` por dia civil local; `from` > `to` dá 400. Nos testes, `signIn` regista um `auth.login` na auditoria, e as contagens contam com isso.
 - Comportamentos implementados no bloco 5 (envio de contacto): o perfil tem de ser visível para o utilizador (as regras de posse dos perfis, senão 404) e ter cartão ativo (409 `profile_without_card`); só os envios aceites contam para os limites (10 por hora, scope `hour`; 50 por dia, scope `day`; sem limite por empresa, por não haver valor definido); o envio guarda apenas `recipientMasked`, incrementa o contador `contactsSent` do cartão ativo no dia civil local e regista `contact.sent`; o histórico mostra os envios dos perfis visíveis (o dono vê os dos seus perfis, mesmo feitos por outros), com filtro `profileId` (404 se não for visível) e paginação.
 - Comportamentos implementados no bloco 4 (perfis): o profile_owner só vê e edita os perfis de que é dono (P-04), os outros papéis veem os da empresa; a lista vem por ordem alfabética e a pesquisa cobre nome, cargo e empresa; criar gera o endereço amigável a partir do nome (`slugFor`: sem acentos, único com sufixo `-2`, `-3`…) e preenche `company` com o nome da empresa; `ownerUserId` exige `profiles.assignOwner` (403) e um utilizador da empresa (404); `theme` exige `themes.manage` (403, P-03); as autorizações são verificadas antes de consumir uploads; `photoFileId` e `theme.logoFileId` seguem a regra `null` remove, omitido mantém, texto consome o upload; `title`, `company` e `bio` vazios ficam `null`; cada edição regista `profile.updated`.
 - Comportamentos implementados no bloco 3 (cartões): a lista vem ordenada por `updatedAt` decrescente e a pesquisa cobre a etiqueta e o nome do perfil; o perfil referido em `profileId` tem de ser da mesma empresa (senão 404); cada alteração acrescenta uma entrada ao histórico (`updated`, `profile_linked`, `profile_unlinked`) e uma entrada `card.updated` na auditoria, nada quando não há alterações; desassociar o perfil de um cartão ativo dá 409 `card_without_profile`; o histórico vem do mais recente para o mais antigo, com empates pela ordem inversa de registo.
@@ -109,8 +112,8 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
   - Uploads: `POST /api/uploads/sign` devolve `/api/uploads/<fileId>`; o `PUT` valida tamanho e magic bytes com `detectImageType`.
 - Verificado no ambiente de testes (Vitest com jsdom): o MSW resolve URLs relativos, aceita `AbortSignal`, corpos `Blob` e respostas lançadas pelos resolvers. No MSW 3 a opção chama-se `onUnhandledFrame` (não `onUnhandledRequest`).
 - Próxima tarefa, por ordem:
-  1. Feito: `packages/shared/src/images.ts`, `handlers/{auth,uploads,companies,members,cards,profiles,contact-shares}.ts`.
-  2. `apps/web/src/mocks/handlers/` por módulo, cada um com testes: analytics e audit, public (inclui gerador de vCard 4.0 com escape), index.
+  1. Feito: `packages/shared/src/images.ts`, `handlers/{auth,uploads,companies,members,cards,profiles,contact-shares,analytics,audit}.ts`.
+  2. `apps/web/src/mocks/handlers/` por módulo, cada um com testes: public (inclui gerador de vCard 4.0 com escape em `mocks/vcard.ts`), index.
   3. `mocks/browser.ts` (inclui a captura do clique no link do VCF) e `mocks/server.ts`; ligar o servidor MSW em `src/test/setup.ts`.
   4. Componentes base, router, guards, layout, páginas de erro e `main.tsx`.
   5. `docs/codebase-graph.md`, ADR-0009, atualização dos ADR-0004 e 0005 e de `docs/requirements.md`.
