@@ -28,6 +28,8 @@ Nenhuma tarefa cumpre ainda a Definition of Done. O que existe e está verificad
 - `packages/shared` completo: 77 testes a passar.
 - Cliente da API com CSRF, renovação de sessão e tratamento de 401, 403 e 429: 23 testes a passar.
 - TOTP da API simulada (RFC 6238): 8 testes a passar.
+- Mecânica comum dos handlers da API simulada (CSRF, sessão, permissões, validação, limites): 7 testes a passar.
+- Handlers de autenticação e conta da API simulada (`handlers/auth.ts`): 34 testes a passar.
 
 ## Em curso
 
@@ -36,7 +38,7 @@ Nenhuma tarefa cumpre ainda a Definition of Done. O que existe e está verificad
 | T-FE-01 Base do projeto | Em desenvolvimento | Faltam `main.tsx`, `playwright.config.ts` e `scripts/check-bundle-size.mjs` |
 | T-FE-02 Pacote partilhado | Em testes | Inclui `images.ts` (magic bytes de JPEG, PNG e WebP); falta registar no grafo |
 | T-FE-03 Cliente da API | Em testes | Código e testes prontos; falta atualizar ADR-0004 e ADR-0005 |
-| T-FE-04 API simulada (MSW) | Em desenvolvimento | Feitos `credentials.ts`, `totp.ts`, `db.ts`, `seed.ts`, `domain.ts`, `handlers/http.ts`; faltam os handlers de cada módulo, `browser.ts`, `server.ts` |
+| T-FE-04 API simulada (MSW) | Em desenvolvimento | Feitos `credentials.ts`, `totp.ts`, `db.ts`, `seed.ts`, `domain.ts`, `handlers/http.ts`, `handlers/testing.ts`, `handlers/auth.ts`; faltam companies e members, cards, profiles e uploads, contact-shares, analytics e audit, public, `handlers/index.ts`, `browser.ts`, `server.ts` |
 | T-FE-05 Estrutura do painel | Planeada | Router, guards, layout, páginas de erro |
 
 ## Pendentes
@@ -65,19 +67,22 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
 ## Alterações recentes
 
 - 2026-11-12: cliente da API e testes; textos centralizados (`shared/i18n`); início da API simulada; primeiro commit no GitHub.
+- 2026-11-12: handlers de autenticação e conta da API simulada (sessão, login, MFA, recuperação, convite, conta, sessões) com 34 testes; `endCurrentSession` no domínio; helper `handlers/testing.ts` para os testes dos handlers.
 
 ## Estado dos testes
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 120 testes a passar (82 em `packages/shared`, 38 em `apps/web`).
+- `pnpm test`: 154 testes a passar (82 em `packages/shared`, 72 em `apps/web`).
 - Playwright: ainda sem testes. Sem verificação de build nem de tamanho do bundle.
 
 ## Registo de continuidade
 
-- Última tarefa: T-FE-04, API simulada.
-- Ficheiros envolvidos: `apps/web/src/mocks/{credentials,totp,db,seed,domain}.ts`, `apps/web/src/mocks/handlers/http.ts` (com `http.test.ts`), `packages/shared/src/images.ts`, `docs/chaves-de-demonstracao.md`.
-- Estado exato: base de dados, dados de demonstração, regras de domínio comuns e mecânica dos handlers (CSRF, sessão, MFA obrigatório, permissões, validação estrita, limites, paginação) escritos e testados. Ainda não há handlers de nenhum endpoint.
+- Última tarefa: T-FE-04, API simulada — handlers por módulo (bloco 1, autenticação, concluído).
+- Ficheiros envolvidos: `apps/web/src/mocks/handlers/{http,testing,auth}.ts` (com `http.test.ts` e `auth.test.ts`), `apps/web/src/mocks/domain.ts` (`endCurrentSession`).
+- Estado exato: mecânica comum e handlers de autenticação e conta escritos e testados (todos os endpoints `/api/auth/*` do ADR-0004). Os restantes módulos ainda não têm handlers; `handlers/index.ts`, `browser.ts` e `server.ts` não existem.
+- Comportamentos implementados em `handlers/auth.ts` (além dos decididos abaixo): o login substitui a sessão anterior deste browser; `mfa/verify` também tem limite de 5 tentativas por minuto por utilizador; `recover` cria um link novo sem invalidar os anteriores (facilita a demonstração); `refresh` mantém o token CSRF; `mfa/setup` com MFA já ativo dá 409 `mfa_already_enabled`; `mfa/confirm` sem configuração iniciada dá 409 `mfa_not_pending` e código errado 422 `invalid_code`; `mfa/disable` sem MFA dá 409 `mfa_not_enabled`; `account`, `password` e `sessions` exigem `account.manage` (administradores sem MFA recebem 403 `mfa_setup_required`).
+- Para testar handlers: `useMockServer(handlers)`, `signIn(userId)`, `api(method, path, body?)` e `errorCode(response)` em `handlers/testing.ts`.
 - Comportamentos já decididos para os handlers (para não redesenhar):
   - Login: 5 tentativas por minuto por email (429 com Retry-After); conta com MFA responde `mfa_required`; credenciais erradas dão 401 `invalid_credentials`.
   - `mfa/verify`: código TOTP ou código de recuperação de uso único; sem desafio pendente dá 401 `mfa_challenge_expired`; código errado dá 401 `invalid_code`.
@@ -92,8 +97,8 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
   - Uploads: `POST /api/uploads/sign` devolve `/api/uploads/<fileId>`; o `PUT` valida tamanho e magic bytes com `detectImageType`.
 - Verificado no ambiente de testes (Vitest com jsdom): o MSW resolve URLs relativos, aceita `AbortSignal`, corpos `Blob` e respostas lançadas pelos resolvers. No MSW 3 a opção chama-se `onUnhandledFrame` (não `onUnhandledRequest`).
 - Próxima tarefa, por ordem:
-  1. Feito: `packages/shared/src/images.ts`.
-  2. `apps/web/src/mocks/handlers/` por módulo, cada um com testes: auth, companies e members, cards, profiles e uploads, contact-shares, analytics e audit, public, index.
+  1. Feito: `packages/shared/src/images.ts` e `handlers/auth.ts`.
+  2. `apps/web/src/mocks/handlers/` por módulo, cada um com testes: companies e members, cards, profiles e uploads, contact-shares, analytics e audit, public (inclui gerador de vCard 4.0 com escape), index.
   3. `mocks/browser.ts` (inclui a captura do clique no link do VCF) e `mocks/server.ts`; ligar o servidor MSW em `src/test/setup.ts`.
   4. Componentes base, router, guards, layout, páginas de erro e `main.tsx`.
   5. `docs/codebase-graph.md`, ADR-0009, atualização dos ADR-0004 e 0005 e de `docs/requirements.md`.

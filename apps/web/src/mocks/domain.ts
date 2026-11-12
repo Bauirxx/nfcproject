@@ -101,12 +101,17 @@ export function startSession(db: MockDb, user: DbUser): void {
   recordAudit(db, user, 'auth.login');
 }
 
+/** Termina a sessão deste browser (logout): remove-a da lista, limpa os «cookies» e muda o token CSRF. */
+export function endCurrentSession(db: MockDb): void {
+  const current = db.cookies.sessionId;
+  if (current !== null) db.sessions = db.sessions.filter((session) => session.id !== current);
+  db.cookies = { sessionId: null, accessExpiresAt: 0, mfaPendingUserId: null };
+  db.csrfToken = randomToken(24);
+}
+
 /** Termina as sessões de um utilizador; `exceptSessionId` mantém uma (por exemplo, a atual). */
 export function endSessions(db: MockDb, userId: string, exceptSessionId: string | null = null): void {
   db.sessions = db.sessions.filter((session) => session.userId !== userId || session.id === exceptSessionId);
   const current = db.cookies.sessionId;
-  if (current !== null && !db.sessions.some((session) => session.id === current)) {
-    db.cookies = { sessionId: null, accessExpiresAt: 0, mfaPendingUserId: null };
-    db.csrfToken = randomToken(24);
-  }
+  if (current !== null && !db.sessions.some((session) => session.id === current)) endCurrentSession(db);
 }
