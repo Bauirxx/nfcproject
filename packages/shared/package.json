@@ -12,6 +12,7 @@
     "./links": "./src/links.ts",
     "./permissions": "./src/permissions.ts",
     "./contrast": "./src/contrast.ts",
+    "./images": "./src/images.ts",
     "./schemas": "./src/schemas/index.ts"
   },
   "scripts": {

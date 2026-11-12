@@ -34,9 +34,9 @@ Nenhuma tarefa cumpre ainda a Definition of Done. O que existe e está verificad
 | Tarefa | Estado | Notas |
 | --- | --- | --- |
 | T-FE-01 Base do projeto | Em desenvolvimento | Faltam `main.tsx`, `playwright.config.ts` e `scripts/check-bundle-size.mjs` |
-| T-FE-02 Pacote partilhado | Em testes | Falta `images.ts` (magic bytes de JPEG, PNG e WebP) com testes |
+| T-FE-02 Pacote partilhado | Em testes | Inclui `images.ts` (magic bytes de JPEG, PNG e WebP); falta registar no grafo |
 | T-FE-03 Cliente da API | Em testes | Código e testes prontos; falta atualizar ADR-0004 e ADR-0005 |
-| T-FE-04 API simulada (MSW) | Em desenvolvimento | Feitos `credentials.ts`, `totp.ts`, `db.ts`, `seed.ts`; faltam os handlers, `browser.ts`, `server.ts` |
+| T-FE-04 API simulada (MSW) | Em desenvolvimento | Feitos `credentials.ts`, `totp.ts`, `db.ts`, `seed.ts`, `domain.ts`, `handlers/http.ts`; faltam os handlers de cada módulo, `browser.ts`, `server.ts` |
 | T-FE-05 Estrutura do painel | Planeada | Router, guards, layout, páginas de erro |
 
 ## Pendentes
@@ -70,18 +70,30 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 108 testes a passar (77 em `packages/shared`, 31 em `apps/web`).
+- `pnpm test`: 120 testes a passar (82 em `packages/shared`, 38 em `apps/web`).
 - Playwright: ainda sem testes. Sem verificação de build nem de tamanho do bundle.
 
 ## Registo de continuidade
 
 - Última tarefa: T-FE-04, API simulada.
-- Ficheiros envolvidos: `apps/web/src/mocks/{credentials,totp,totp.test,db,seed}.ts`, `apps/web/tsconfig.node.json`.
-- Estado exato: base de dados e dados de demonstração escritos e a compilar; ainda nenhum handler MSW.
+- Ficheiros envolvidos: `apps/web/src/mocks/{credentials,totp,db,seed,domain}.ts`, `apps/web/src/mocks/handlers/http.ts` (com `http.test.ts`), `packages/shared/src/images.ts`, `docs/chaves-de-demonstracao.md`.
+- Estado exato: base de dados, dados de demonstração, regras de domínio comuns e mecânica dos handlers (CSRF, sessão, MFA obrigatório, permissões, validação estrita, limites, paginação) escritos e testados. Ainda não há handlers de nenhum endpoint.
+- Comportamentos já decididos para os handlers (para não redesenhar):
+  - Login: 5 tentativas por minuto por email (429 com Retry-After); conta com MFA responde `mfa_required`; credenciais erradas dão 401 `invalid_credentials`.
+  - `mfa/verify`: código TOTP ou código de recuperação de uso único; sem desafio pendente dá 401 `mfa_challenge_expired`; código errado dá 401 `invalid_code`.
+  - `mfa/disable`: administradores recebem 403 `mfa_required_for_role`; palavra-passe errada dá 422 `invalid_current_password`.
+  - `recover` responde sempre 202; `recover/confirm` dá 204, 400 `invalid_token` ou 422 `weak_password` e termina todas as sessões; `invite/accept` dá 204 sem criar sessão.
+  - `DELETE /api/auth/sessions` termina todas as sessões, incluindo a atual.
+  - Recursos de outra empresa dão sempre 404. Membros: 409 `already_member`, `last_admin`, `cannot_change_self`.
+  - Cartões: transição inválida dá 409 `invalid_transition`; ativar sem perfil dá 409 `card_without_profile`.
+  - Envios: 10 por hora e 50 por dia por utilizador (429 com `scope` e Retry-After); perfil sem cartão ativo dá 409 `profile_without_card`; só se guarda o destinatário mascarado.
+  - Página pública: só cartões `active` com perfil; tudo o resto dá o mesmo 404. O VCF é `text/vcard`. Eventos públicos respondem sempre 204, com deduplicação de 30 minutos.
+  - Estatísticas: base determinística por cartão e dia, mais os contadores registados.
+  - Uploads: `POST /api/uploads/sign` devolve `/api/uploads/<fileId>`; o `PUT` valida tamanho e magic bytes com `detectImageType`.
 - Verificado no ambiente de testes (Vitest com jsdom): o MSW resolve URLs relativos, aceita `AbortSignal`, corpos `Blob` e respostas lançadas pelos resolvers. No MSW 3 a opção chama-se `onUnhandledFrame` (não `onUnhandledRequest`).
 - Próxima tarefa, por ordem:
-  1. `packages/shared/src/images.ts` (`detectImageType`) com testes e export `./images`.
-  2. `apps/web/src/mocks/domain.ts` e `handlers/` (http, auth, companies e members, cards, profiles e uploads, contact-shares, analytics e audit, public, index).
+  1. Feito: `packages/shared/src/images.ts`.
+  2. `apps/web/src/mocks/handlers/` por módulo, cada um com testes: auth, companies e members, cards, profiles e uploads, contact-shares, analytics e audit, public, index.
   3. `mocks/browser.ts` (inclui a captura do clique no link do VCF) e `mocks/server.ts`; ligar o servidor MSW em `src/test/setup.ts`.
   4. Componentes base, router, guards, layout, páginas de erro e `main.tsx`.
   5. `docs/codebase-graph.md`, ADR-0009, atualização dos ADR-0004 e 0005 e de `docs/requirements.md`.
