@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+
+/* O modo escuro do painel é ativado pela classe `dark` em <html> (src/shared/lib/theme-preference.ts). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Pares de cor verificados para contraste WCAG 2.2 AA: texto 4,5:1 e limites de campos 3:1. */
+:root {
+  color-scheme: light;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --border: #e2e8f0;
+  --input: #64748b;
+  --primary: #1e40af;
+  --primary-foreground: #ffffff;
+  --secondary: #e2e8f0;
+  --secondary-foreground: #0f172a;
+  --accent: #e0e7ff;
+  --accent-foreground: #1e3a8a;
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+  --success: #15803d;
+  --warning: #a16207;
+  --ring: #2563eb;
+  --overlay: rgb(15 23 42 / 0.6);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0b1220;
+  --foreground: #e5e9f0;
+  --card: #111a2e;
+  --card-foreground: #e5e9f0;
+  --muted: #1a2540;
+  --muted-foreground: #a3b0c5;
+  --border: #25324d;
+  --input: #6b7c99;
+  --primary: #8ab4f8;
+  --primary-foreground: #0b1220;
+  --secondary: #25324d;
+  --secondary-foreground: #e5e9f0;
+  --accent: #1e2c4d;
+  --accent-foreground: #c7d7fb;
+  --destructive: #f87171;
+  --destructive-foreground: #0b1220;
+  --success: #4ade80;
+  --warning: #facc15;
+  --ring: #8ab4f8;
+  --overlay: rgb(0 0 0 / 0.7);
+}
+
+@theme inline {
+  /* Fontes do sistema: nenhuma fonte web é descarregada (ADR-0006). */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Bloqueio de scroll dos diálogos, sem <style> em tempo de execução (ADR-0006). */
+  html.scroll-locked,
+  html.scroll-locked body {
+    overflow: hidden;
+  }
+}

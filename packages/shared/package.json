@@ -1,0 +1,28 @@
+{
+  "name": "@nfc-business/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contrato partilhado entre frontend e backend: schemas Zod, constantes, validadores e permissões",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./constants": "./src/constants.ts",
+    "./validators": "./src/validators.ts",
+    "./links": "./src/links.ts",
+    "./permissions": "./src/permissions.ts",
+    "./contrast": "./src/contrast.ts",
+    "./schemas": "./src/schemas/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "^5.1.0"
+  }
+}

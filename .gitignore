@@ -1,0 +1,28 @@
+# Dependências
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Testes
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Ambiente: nunca versionar segredos (CLAUDE.md, regra 9)
+.env
+.env.*
+!.env.example
+
+# Editor e sistema
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log

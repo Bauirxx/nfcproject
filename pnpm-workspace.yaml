@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Cadeia de fornecimento (CLAUDE.md, regra 10)
+# Atraso mínimo de 7 dias para versões novas (valor em minutos).
+minimumReleaseAge: 10080
+# Nenhum script de ciclo de vida de dependências é executado na instalação.
+ignoreScripts: true
+engineStrict: true
