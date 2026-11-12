@@ -95,7 +95,7 @@ Testes: `totp.test.ts`, `vcard.test.ts`, `vcf-download.test.ts`, `handlers/*.tes
 
 | Ficheiro | Exporta | Depende de |
 |----------|---------|------------|
-| `main.tsx` | Entrada: arranca a API simulada (dev/e2e) e carrega o painel por `import()`. A ramificação estática para a página pública entra na T-FE-10 | `@/mocks/browser` e `@/app/entry` (ambos por `import()`) |
+| `main.tsx` | Entrada: arranca a API simulada (dev/e2e); ramifica por caminho — `/c/:token` e `/p/:slug` renderizam a página pública (import estático relativo de `features/public-card/mount`), o resto carrega o painel por `import()` | `./features/public-card/mount` (estático), `@/mocks/browser` e `@/app/entry` (por `import()`) |
 | `app/entry.tsx` | `renderPanel` | `providers`, `query-client`, `router`, `session-events`, `theme` |
 | `app/routes.tsx`, `app/router.ts` | `routes`, `createRouter` | guards, páginas de erro, `app-shell`, `placeholder-page` |
 | `app/guards.tsx` | `RequireAuth`, `RequireGuest`, `RequirePermission` | `session`, `session-events`, `error-pages`, `shared/permissions` |
@@ -120,15 +120,16 @@ Testes: `app/{app-shell,error-pages,theme-toggle,session-events}.test.tsx`.
 | Caminho | Conteúdo | Depende de | Tarefa |
 |---------|----------|------------|--------|
 | `features/auth/` (`auth-layout`, `from-state`, `use-url-token`, `schemas`, `login-page`, `mfa-verify-page`, `mfa-setup-page`, `recover-password-page`, `reset-password-page`, `accept-invite-page`) | Ecrãs de autenticação; substituem os `PlaceholderPage` das rotas de auth | `api/client`/`lib/parsed-api`, `endpoints`, `shared/schemas`, `shared/components/ui/*`, `app/session-events`, `react-hook-form`, `@hookform/resolvers/zod` | T-FE-06 |
+| `features/public-card/` (`mount`, `public-card-page`, `parse-public-card`, `public-events`, `public-qr`) | Página pública leve (ADR-0003): fetch, estados, página neutra, ações saneadas, eventos, QR por `import()`, partilha | `api/client`, `endpoints`, `i18n/public`, `@nfc-business/shared/{links,constants,contrast,validators}`, tipos de `/schemas`, `uqr` (dinâmico) | T-FE-10 |
 
-Testes: `features/auth/*.test.tsx` (login, mfa verificar/configurar, recuperar, definir, convite).
+Testes: `features/auth/*.test.tsx`, `features/public-card/public-card-page.test.tsx`. Regra do bundle público verificada no build (secção 6).
 
 ### 3.5 Planeado (inferido, sem código)
 
 | Caminho | Conteúdo previsto | Tarefas |
 |---------|-------------------|---------|
-| `src/features/{public-card,cards,profiles,contact-sending,companies,members,analytics,themes,audit}/` | Ecrãs por funcionalidade (substituem os `PlaceholderPage`) | T-FE-10 a T-FE-25 |
-| Ramificação da página pública em `main.tsx` | Render estático de `/c/:token` e `/p/:slug` | T-FE-10 |
+| `src/features/{cards,profiles,contact-sending,companies,members,analytics,themes,audit}/` | Ecrãs por funcionalidade (substituem os `PlaceholderPage`) | T-FE-12 a T-FE-25 |
+| Envio do dono na página pública | Botão e painel de envio a pedido | T-FE-11 |
 | `e2e/`, `playwright.config.ts` | Cinco fluxos principais contra o build com CSP | T-FE-27 |
 | `scripts/check-bundle-size.mjs` | Orçamento de JavaScript da página pública | T-FE-28 |
 
