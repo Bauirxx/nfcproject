@@ -1,4 +1,6 @@
 import { Navigate, type RouteObject } from 'react-router';
+import { LoginPage } from '@/features/auth/login-page';
+import { MfaVerifyPage } from '@/features/auth/mfa-verify-page';
 import { navTexts } from '@/shared/i18n/panel/nav';
 import { AppShell } from './app-shell';
 import { ForbiddenPage, NotFoundPage, ServerErrorPage, SessionExpiredPage } from './error-pages';
@@ -18,8 +20,8 @@ export const routes: RouteObject[] = [
       {
         element: <RequireGuest />,
         children: [
-          { path: 'entrar', element: <PlaceholderPage title="Entrar" /> },
-          { path: 'entrar/mfa', element: <PlaceholderPage title="Verificação em dois passos" /> },
+          { path: 'entrar', element: <LoginPage /> },
+          { path: 'entrar/mfa', element: <MfaVerifyPage /> },
           { path: 'recuperar-password', element: <PlaceholderPage title="Recuperar palavra-passe" /> },
         ],
       },

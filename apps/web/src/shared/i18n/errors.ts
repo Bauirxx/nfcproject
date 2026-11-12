@@ -26,6 +26,7 @@ export const errorTexts = {
 const byCode: Record<string, string> = {
   invalid_credentials: 'Email ou palavra-passe incorretos.',
   invalid_code: 'O código não está correto ou já expirou. Tente novamente.',
+  mfa_challenge_expired: 'O início de sessão expirou. Entre novamente para continuar.',
   invalid_token: 'Este link não é válido ou já expirou. Peça um novo.',
   invalid_current_password: 'A palavra-passe atual não está correta.',
   weak_password: 'Esta palavra-passe aparece em listas de palavras-passe expostas. Escolha outra.',

@@ -39,4 +39,8 @@ export const commonTexts = {
     system: 'Automático',
     toggle: 'Mudar o tema',
   },
+  password: {
+    show: 'Mostrar a palavra-passe',
+    hide: 'Esconder a palavra-passe',
+  },
 } as const;

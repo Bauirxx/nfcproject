@@ -2,3 +2,4 @@
 export { commonTexts } from './common';
 export { navTexts } from './nav';
 export { errorPageTexts } from './error-pages';
+export { authTexts } from './auth';

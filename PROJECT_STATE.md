@@ -51,7 +51,7 @@ O que mais existe e está verificado:
 | T-FE-01 Base do projeto | Em revisão | `main.tsx` feito; faltam `playwright.config.ts` (T-FE-27) e `scripts/check-bundle-size.mjs` (T-FE-28) |
 | T-FE-03 Cliente da API | Em revisão | Código, testes e ADR-0005 prontos; `lib/parsed-api.ts` ganha teste com o primeiro consumidor (T-FE-06) |
 | T-FE-04 API simulada (MSW) | Em revisão | Código, testes, ADR-0009 e grafo prontos; `main.tsx` chama `startMockApi`; falta confirmar o worker no browser real (ao abrir `pnpm dev`) |
-| T-FE-06 Autenticação | Planeada | Login, verificação MFA, configuração MFA, recuperação/definição de palavra-passe, aceitar convite (próxima tarefa) |
+| T-FE-06 Autenticação | Em desenvolvimento | Login e verificação MFA (TOTP e código de recuperação) feitos e testados; faltam configurar MFA, recuperar/definir palavra-passe e aceitar convite |
 
 ## Pendentes
 
@@ -93,13 +93,14 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 - 2026-11-12: `handlers/index.ts` junta todos os handlers e responde 404 `not_found` a qualquer outro `/api/*`, com 3 testes (inclui a verificação de que não há método e caminho repetidos).
 - 2026-11-12: documentação da T-FE-04: ADR-0009 (estratégia de testes e API simulada), `docs/codebase-graph.md`, pressupostos P-09 a P-11 e estados das tarefas em `docs/requirements.md`, complementos aos ADR-0004 (códigos de erro) e ADR-0005 (renovação, `refreshable`, CSRF).
 - 2026-11-12: `mocks/server.ts` ligado em `src/test/setup.ts` (todos os testes correm sobre a API simulada completa; `useMockServer` passou a acrescentar rotas ao servidor global antes de cada teste), `mocks/browser.ts` (`startMockApi`) e `mocks/vcf-download.ts` com 5 testes.
+- 2026-11-12: T-FE-06 (parcial) — login e verificação MFA. Componentes de formulário (`input`, `label`, `text-field`, `password-field`, `card`, `alert`), textos de autenticação, `AuthLayout`, `LoginPage` e `MfaVerifyPage` (TOTP e código de recuperação) sobre a API simulada, com `apiParsed` a validar as respostas. Rótulos marcam o campo opcional (não o obrigatório). 6 testes.
 - 2026-11-12: T-FE-05 — estrutura do painel. Preferência e store de tema, textos do painel (`shared/i18n/panel`), componentes base (`shared/components/ui`: button, spinner, skeleton, toaster + toast-store), sessão e aviso de expiração (`app/session.ts`, `app/session-events.ts`), cliente do TanStack Query, providers, guards, páginas de erro, casca com menu por papel e seletor de tema, rotas, router, `app/entry.tsx` e `main.tsx`. 13 testes (casca, páginas de erro, tema, expiração) e build de produção verificado (`main.tsx` 1,2 KB gzip; painel 130 KB gzip à parte; API simulada fora do build).
 
 ## Estado dos testes
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 288 testes a passar (82 em `packages/shared`, 206 em `apps/web`).
+- `pnpm test`: 294 testes a passar (82 em `packages/shared`, 212 em `apps/web`).
 - `pnpm --filter @nfc-business/web build`: a passar; API simulada confirmada fora do bundle.
 - Playwright: ainda sem testes. Falta o `scripts/check-bundle-size.mjs` (T-FE-28).
 
