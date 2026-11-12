@@ -71,3 +71,28 @@ O prompt do frontend manda usar MSW «enquanto o backend não estiver pronto». 
 - O backend deve confirmar ou corrigir cada linha «Inferido». Cada correção atualiza este ADR, o grafo, `endpoints.ts` e o handler MSW.
 - O prompt mestre descreve o corpo de `POST /api/contact-shares` com `profile_id`; aqui usa-se `profileId`, por coerência com camelCase. Se o backend preferir snake_case, a mudança faz-se nos schemas partilhados.
 - As transições de estado dos cartões assumidas na interface (`blocked` é terminal; `lost` pode voltar a `active`) precisam de confirmação.
+
+## Complemento de 2026-11-12 — códigos de erro usados pela API simulada
+
+A API simulada (ADR-0009) responde com estes códigos; o backend deve confirmá-los ou corrigi-los, porque a interface os traduz em mensagens.
+
+| Situação | Estado e código |
+|----------|-----------------|
+| Sem sessão ou access token expirado | 401 `unauthenticated` |
+| Credenciais erradas, email desconhecido ou convite por aceitar | 401 `invalid_credentials` |
+| Segundo passo sem desafio pendente / código TOTP ou de recuperação errado | 401 `mfa_challenge_expired` / 401 `invalid_code` |
+| Token CSRF ausente ou errado | 403 `csrf_invalid` |
+| Administrador sem MFA configurado / sem permissão do papel | 403 `mfa_setup_required` / 403 `forbidden` |
+| Recurso de outra empresa, fora da posse ou inexistente | 404 `not_found` (sempre o mesmo) |
+| Corpo que não é JSON ou query inválida | 400 `invalid_request` |
+| Link de recuperação ou convite inválido, expirado ou já usado | 400 `invalid_token` |
+| Corpo fora do schema ou com campos desconhecidos | 422 `validation_failed` |
+| Palavra-passe exposta em fugas de dados / palavra-passe atual errada | 422 `weak_password` / 422 `invalid_current_password` |
+| Upload: identificador inválido ou tamanho diferente do anunciado / acima de 2 MB / tipo não confirmado pelos magic bytes | 422 `invalid_file` / 413 `file_too_large` / 415 `unsupported_file_type` |
+| MFA: já ativo, sem configuração iniciada, não ativo, obrigatório para o papel | 409 `mfa_already_enabled`, 409 `mfa_not_pending`, 409 `mfa_not_enabled`, 403 `mfa_required_for_role` |
+| Email que já tem conta / o próprio a mudar o seu papel ou a remover-se | 409 `already_member` / 409 `cannot_change_self` |
+| Transição de estado do cartão não permitida / ativar ou desassociar sem perfil | 409 `invalid_transition` / 409 `card_without_profile` |
+| Envio para perfil sem cartão ativo | 409 `profile_without_card` |
+| Limites: login e recuperação (5 por minuto por email), segundo passo (5 por minuto), envios (10 por hora, 50 por dia) | 429 `rate_limited`, com `Retry-After` e, nos envios, `scope` `hour` ou `day` |
+
+Outros comportamentos simulados a confirmar: `POST /api/auth/recover` responde 202 sem corpo; `invite/accept` responde 204 sem iniciar sessão; `DELETE /api/auth/sessions` termina também a sessão atual; `POST /api/uploads/sign` responde 200 e o `PUT` do ficheiro 204; `POST /api/contact-shares` responde 201 com o envio já mascarado; os eventos públicos respondem sempre 204; a página pública envia `Cache-Control: public, max-age=60`; o VCF é `text/vcard; charset=utf-8` com `Content-Disposition: attachment; filename="<slug>.vcf"`.

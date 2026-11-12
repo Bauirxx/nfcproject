@@ -30,3 +30,12 @@ Um só pedido resolve as duas necessidades e mantém o armazenamento do browser 
 
 - Cada visita anónima à página pública faz um pedido a `/api/auth/session`. Não bloqueia a renderização. Se o backend isentar `POST /api/public/events` de token CSRF, este pedido pode ser eliminado para anónimos.
 - A preferência de tema claro ou escuro é o único valor guardado em `localStorage`. Não é um token nem um segredo.
+
+## Complemento de 2026-11-12 — como o cliente aplica estas regras
+
+Implementado em `apps/web/src/shared/api/client.ts` e `session.ts`, com 23 testes:
+
+- **Pedidos sem renovação** (um 401 é a resposta final): `GET /api/auth/session`, `POST /api/auth/login`, `logout`, `refresh`, `mfa/verify`, `recover`, `recover/confirm` e `invite/accept`. Em todos os outros caminhos, um 401 chama `POST /api/auth/refresh` uma vez (pedidos em simultâneo partilham a renovação) e repete o pedido; se a renovação falhar, emite `unauthorized`.
+- **Campo `refreshable`** em `GET /api/auth/session`: sem utilizador mas com refresh token válido. `loadSession` renova a sessão e volta a consultar antes de concluir que o visitante é anónimo.
+- **Quando o token CSRF é reposto**: depois de `login`, `logout`, `refresh`, `mfa/verify` e `invite/accept` (a sessão passa a ser outra) e quando um pedido recebe 403 `csrf_invalid` (o pedido é repetido uma vez com token novo). O token chega sempre por `GET /api/auth/session` e vive só em memória.
+- A API simulada (ADR-0009) muda o token CSRF em cada início e fim de sessão, o que exercita estes caminhos nos testes.

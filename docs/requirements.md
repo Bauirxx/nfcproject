@@ -113,9 +113,9 @@ Estados das tarefas: Não iniciada, Planeada, Em desenvolvimento, Em revisão, E
 | ID | Tarefa | Passo | Requisitos | Estado |
 |----|--------|-------|------------|--------|
 | T-FE-01 | Workspace, ferramentas e configuração | 1 | RNF-FE-01, RNF-FE-08 | Em desenvolvimento |
-| T-FE-02 | Pacote partilhado: schemas, validadores, links, permissões | 1 | RNF-FE-01, RF-FE-22 | Planeada |
-| T-FE-03 | Cliente da API: credenciais, CSRF, renovação, 401/403/429 | 1 | RF-FE-22, RNF-FE-01 | Planeada |
-| T-FE-04 | API simulada com MSW | 1 | RNF-FE-08 | Planeada |
+| T-FE-02 | Pacote partilhado: schemas, validadores, links, permissões | 1 | RNF-FE-01, RF-FE-22 | Concluída |
+| T-FE-03 | Cliente da API: credenciais, CSRF, renovação, 401/403/429 | 1 | RF-FE-22, RNF-FE-01 | Em revisão |
+| T-FE-04 | API simulada com MSW | 1 | RNF-FE-08 | Em revisão |
 | T-FE-05 | Casca da aplicação: routing, layout, menu por papel, tema, erros, i18n, componentes | 1 | RF-FE-21, RF-FE-22, RNF-FE-03 a 07 | Planeada |
 | T-FE-06 | Login e verificação MFA | 2 | RF-FE-03 | Planeada |
 | T-FE-07 | Configuração de MFA | 2 | RF-FE-04 | Planeada |
@@ -155,3 +155,6 @@ Pontos em que as fontes são omissas. Foram assumidos para não bloquear o traba
 | P-06 | O `platform_admin` não tem empresa na sessão e não gere cartões, perfis nem membros | Matriz de permissões |
 | P-07 | A interface não inclui eliminar empresas, cartões nem perfis, por não constar do prompt do frontend | Novos ecrãs |
 | P-08 | Não foram encontrados ecrãs exportados do Google Stitch; o design segue shadcn/ui sóbrio | Revisão visual |
+| P-09 | O primeiro administrador de uma empresa é convidado pelo `adminEmail` de `POST /api/companies`; não há registo público | Schema de criação de empresa e handler |
+| P-10 | O dono de um perfil é atribuído por `ownerUserId`, só por `company_admin` (permissão `profiles.assignOwner`) | Matriz de permissões e editor de perfil |
+| P-11 | Um cartão só pode ser ativado com perfil associado, e o perfil não pode ser desassociado de um cartão ativo | Ações do cartão e handler |

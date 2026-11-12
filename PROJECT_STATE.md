@@ -14,7 +14,7 @@ Atualizado em 2026-11-12.
 - Monorepo pnpm: `apps/web` (React 19, Vite 8, TypeScript 6, Tailwind 4) e `packages/shared` (schemas Zod, constantes, validadores, links e permissões, partilhados com o futuro backend). `apps/api` ainda não existe.
 - O frontend só chama `/api/*` na mesma origem, com `credentials: include` e `X-CSRF-Token` nos pedidos que alteram dados (`apps/web/src/shared/api/client.ts`).
 - A página pública (`/c/:token`, `/p/:slug`) entra no carregamento inicial; o painel é carregado à parte (ADR-0003).
-- Decisões registadas em `docs/adr/0001` a `0008`.
+- Decisões registadas em `docs/adr/0001` a `0009`; grafo do código em `docs/codebase-graph.md`.
 
 ## Módulos
 
@@ -22,7 +22,11 @@ auth, companies, members, cards, profiles, sharing, contact-sending, analytics, 
 
 ## Funcionalidades concluídas
 
-Nenhuma tarefa cumpre ainda a Definition of Done. O que existe e está verificado:
+Cumprem a Definition of Done:
+
+- T-FE-02 Pacote partilhado (`packages/shared`): schemas, validadores, links, permissões, contraste e imagens, com 82 testes, registado no grafo e nos ADR-0004, 0005 e 0009.
+
+O que mais existe e está verificado:
 
 - Ferramentas do repositório: workspace pnpm, TypeScript, ESLint (inclui `react/no-danger` e proibição de armazenamento do browser), configuração do Vite com CSP no `preview`.
 - `packages/shared` completo: 77 testes a passar.
@@ -44,9 +48,8 @@ Nenhuma tarefa cumpre ainda a Definition of Done. O que existe e está verificad
 | Tarefa | Estado | Notas |
 | --- | --- | --- |
 | T-FE-01 Base do projeto | Em desenvolvimento | Faltam `main.tsx`, `playwright.config.ts` e `scripts/check-bundle-size.mjs` |
-| T-FE-02 Pacote partilhado | Em testes | Inclui `images.ts` (magic bytes de JPEG, PNG e WebP); falta registar no grafo |
-| T-FE-03 Cliente da API | Em testes | Código e testes prontos; falta atualizar ADR-0004 e ADR-0005 |
-| T-FE-04 API simulada (MSW) | Em revisão | Código e testes completos (`credentials`, `totp`, `db`, `seed`, `domain`, `vcard`, `vcf-download`, `server`, `browser`, `handlers/*`); faltam o ADR-0009, o grafo e a chamada a `startMockApi` em `main.tsx` (T-FE-05) |
+| T-FE-03 Cliente da API | Em revisão | Código, testes e ADR-0005 prontos; falta um teste para `lib/parsed-api.ts` e o primeiro consumidor |
+| T-FE-04 API simulada (MSW) | Em revisão | Código, testes, ADR-0009 e grafo prontos; falta verificar o arranque do worker no browser quando `main.tsx` chamar `startMockApi` (T-FE-05) |
 | T-FE-05 Estrutura do painel | Planeada | Router, guards, layout, páginas de erro |
 
 ## Pendentes
@@ -60,17 +63,15 @@ Nenhum.
 ## Problemas conhecidos e pontos por confirmar
 
 - Os endpoints marcados como «inferidos» no ADR-0004 e os pressupostos P-01 a P-08 de `docs/requirements.md` precisam de confirmação quando o backend for desenhado.
-- Novos pressupostos por registar em `docs/requirements.md`: P-09 (o primeiro administrador de uma empresa é convidado por `adminEmail`), P-10 (o dono do perfil é atribuído por `ownerUserId`, só por company_admin), P-11 (um cartão só pode ser ativado com perfil associado).
-- ADR-0005 por atualizar: lista de pedidos sem renovação, campo `refreshable` da sessão e pontos em que o token CSRF é reposto.
 - `apps/web/src/mocks/credentials.ts` e `seed.ts` têm palavras-passe e chaves TOTP fictícias (domínios `.test`). Quando o gitleaks for configurado, estes dois ficheiros precisam de uma exceção.
 - Tailwind 4 exige browsers recentes (Safari 16.4, Chrome 111, Firefox 128).
 - `containsLink` pode recusar notas com um ponto sem espaço antes de palavras como «com» (aceite: erra para o lado seguro).
-- `docs/codebase-graph.md` ainda não existe.
+- O ficheiro `apps/web/mocks-static/mockServiceWorker.js` tem de acompanhar a versão do MSW (3.0.3); confirmar no browser quando `main.tsx` existir.
 - Os ficheiros `cn.ts`, `parsed-api.ts` e os de `shared/i18n` passam no typecheck e no lint, mas ainda não têm testes próprios nem consumidores.
 
 ## Decisões
 
-Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e contra o build com CSP e MSW, constante `__API_MOCKING__`, worker do MSW fora de `public/`, base de dados simulada em localStorage só com dados fictícios) — a registar como ADR-0009.
+Ver `docs/adr/` (0001 a 0009). A estratégia de testes e a API simulada estão no ADR-0009; os códigos de erro da API simulada a confirmar pelo backend estão no complemento do ADR-0004.
 
 ## Alterações recentes
 
@@ -83,6 +84,7 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
 - 2026-11-12: handlers de estatísticas (série diária determinística mais eventos registados, por cartão e por empresa, com posse e filtros) e de auditoria (filtros por ação, autor e datas; isolamento por empresa) com 15 testes.
 - 2026-11-12: handlers públicos (cartão por token e por endereço amigável, VCF, eventos com deduplicação) e gerador de vCard 4.0 com escape e dobragem de linhas, com 18 testes.
 - 2026-11-12: `handlers/index.ts` junta todos os handlers e responde 404 `not_found` a qualquer outro `/api/*`, com 3 testes (inclui a verificação de que não há método e caminho repetidos).
+- 2026-11-12: documentação da T-FE-04: ADR-0009 (estratégia de testes e API simulada), `docs/codebase-graph.md`, pressupostos P-09 a P-11 e estados das tarefas em `docs/requirements.md`, complementos aos ADR-0004 (códigos de erro) e ADR-0005 (renovação, `refreshable`, CSRF).
 - 2026-11-12: `mocks/server.ts` ligado em `src/test/setup.ts` (todos os testes correm sobre a API simulada completa; `useMockServer` passou a acrescentar rotas ao servidor global antes de cada teste), `mocks/browser.ts` (`startMockApi`) e `mocks/vcf-download.ts` com 5 testes.
 
 ## Estado dos testes
@@ -94,8 +96,8 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
 
 ## Registo de continuidade
 
-- Última tarefa: T-FE-04, API simulada — concluído o código: handlers por módulo (blocos 1 a 8) e, no bloco 9, `server.ts`, `browser.ts`, `vcf-download.ts` e a ligação ao `setup.ts`.
-- Ficheiros envolvidos: `apps/web/src/mocks/{server,browser,vcf-download}.ts`, `apps/web/src/mocks/handlers/testing.ts`, `apps/web/src/test/setup.ts`, `apps/web/src/mocks/handlers/http.test.ts`.
+- Última tarefa: T-FE-04, API simulada — código (blocos 1 a 9) e documentação (bloco 10: ADR-0009, grafo, requisitos, ADR-0004 e 0005) concluídos.
+- Ficheiros envolvidos no último bloco: `docs/adr/0009-estrategia-de-testes-e-api-simulada.md`, `docs/codebase-graph.md`, `docs/requirements.md`, `docs/adr/0004-contrato-de-api-provisorio.md`, `docs/adr/0005-sessao-csrf-e-renovacao.md`.
 - Estado exato: todos os endpoints do ADR-0004 têm handler e testes, reunidos em `handlers/index.ts`. O servidor MSW global (`mocks/server.ts`) é ligado em `src/test/setup.ts` com `onUnhandledFrame: 'error'`, e `resetHandlers` e `resetDb` correm depois de cada teste; `useMockServer(handlers)` acrescenta rotas com `server.use` antes de cada teste. `mocks/browser.ts` exporta `startMockApi()`: `enablePersistence()`, `setupWorker(...handlers).start({ onUnhandledFrame: 'bypass', quiet: true, serviceWorker: { url: '/mockServiceWorker.js' } })` e `interceptVcfDownloads()`. A captura do VCF (`mocks/vcf-download.ts`) impede a navegação nos links `/api/public/(cards|profiles)/:x/contact.vcf` da mesma origem, pede o ficheiro com `fetch` e entrega-o como Blob com o nome do `Content-Disposition`; não toca em cliques com modificadores nem já tratados. `startMockApi` ainda não é chamado por ninguém: falta `main.tsx` (T-FE-05).
 - Comportamentos implementados no bloco 7 (público): `GET /api/public/cards/:token` e `/api/public/profiles/:slug` só respondem a cartões `active` com perfil (pelo endereço amigável, o perfil precisa de um cartão ativo) e devolvem a vista pública (nome sempre público, restantes campos conforme a visibilidade, só contactos e redes `isPublic`), com `Cache-Control: public, max-age=60`; tudo o resto, incluindo tokens mal formados, dá o mesmo 404 `not_found`. O VCF é `text/vcard; charset=utf-8`, `Content-Disposition: attachment; filename="<slug>.vcf"`, gerado por `mocks/vcard.ts` (vCard 4.0: escape de `\`, `,`, `;` e quebras de linha, remoção de caracteres de controlo, linhas dobradas a 75 octetos, `N` com o último nome como apelido, telefones só em E.164 sem repetições, redes em `X-SOCIALPROFILE`, link do cartão em `URL;TYPE=x-nfc-card`, sem fotografia). `POST /api/public/events` exige o token CSRF, valida a lista fechada, responde sempre 204 e deduplica 30 minutos por cartão e tipo (não por IP, que a simulação não conhece); o limite de 60 pedidos por minuto por IP também não é simulado.
 - Comportamentos implementados no bloco 6: estatísticas com `from` e `to` obrigatórios (intervalo até 366 dias, senão 400), base determinística por cartão e dia (`demoWeight`, menos atividade ao fim de semana, nada no futuro nem antes da criação do cartão) somada aos contadores registados; cartões visíveis segundo o papel (platform_admin todos, com `byCompany` e filtro `companyId`; empresa; o dono só os cartões dos seus perfis); `cardId` fora dos visíveis dá 404 e `companyId` sem `analytics.filterByCompany` dá 403. Auditoria: platform_admin vê tudo, company_admin só a sua empresa; filtros `action`, `actor` (nome ou email, sem maiúsculas) e `from`/`to` por dia civil local; `from` > `to` dá 400. Nos testes, `signIn` regista um `auth.login` na auditoria, e as contagens contam com isso.
@@ -123,5 +125,5 @@ Ver `docs/adr/`. Decisões tomadas e ainda sem ADR: estratégia de testes (e2e c
   2. Feito: `handlers/index.ts`.
   3. Feito: `mocks/browser.ts`, `mocks/vcf-download.ts`, `mocks/server.ts` e a ligação em `src/test/setup.ts`.
   4. T-FE-05: componentes base, router, guards, layout, páginas de erro e `main.tsx` (com `if (__API_MOCKING__) await (await import('@/mocks/browser')).startMockApi()` antes de montar a aplicação).
-  5. `docs/codebase-graph.md`, ADR-0009, atualização dos ADR-0004 e 0005 e de `docs/requirements.md`.
+  5. Feito: `docs/codebase-graph.md`, ADR-0009, complementos aos ADR-0004 e 0005 e `docs/requirements.md`.
 - Passos para retomar: ver `README.md` (instalação) e depois correr `pnpm typecheck`, `pnpm lint` e `pnpm test` antes de continuar.
