@@ -1,5 +1,5 @@
 // Regras de domínio partilhadas pelos handlers da API simulada.
-import type { AuditAction } from '@nfc-business/shared/constants';
+import type { AuditAction, MemberRole } from '@nfc-business/shared/constants';
 import { requiresMfa } from '@nfc-business/shared/permissions';
 import type { SessionUser } from '@nfc-business/shared/schemas';
 import { nextId, randomToken, type DbCard, type DbUser, type MockDb } from './db';
@@ -114,4 +114,35 @@ export function endSessions(db: MockDb, userId: string, exceptSessionId: string 
   db.sessions = db.sessions.filter((session) => session.userId !== userId || session.id === exceptSessionId);
   const current = db.cookies.sessionId;
   if (current !== null && !db.sessions.some((session) => session.id === current)) endCurrentSession(db);
+}
+
+/** Validade de um convite. */
+export const INVITE_TTL_MS = 7 * 24 * 3_600_000;
+
+/** Já existe uma conta com este email, em qualquer empresa: os emails são únicos na plataforma. */
+export function emailTaken(db: MockDb, email: string): boolean {
+  return db.users.some((user) => user.email === email);
+}
+
+/** Cria a conta convidada e o link de convite (o email não é simulado). A conta só fica ativa em `invite/accept`. */
+export function inviteUser(db: MockDb, email: string, role: MemberRole, companyId: string): DbUser & { role: MemberRole } {
+  const user: DbUser & { role: MemberRole } = {
+    id: nextId('u'),
+    name: null,
+    email,
+    password: null,
+    role,
+    companyId,
+    status: 'invited',
+    totpSecret: null,
+    pendingTotpSecret: null,
+    recoveryCodes: [],
+    createdAt: isoNow(),
+  };
+  db.users.push(user);
+  db.inviteTokens[randomToken(24)] = {
+    userId: user.id,
+    expiresAt: new Date(Date.now() + INVITE_TTL_MS).toISOString(),
+  };
+  return user;
 }
