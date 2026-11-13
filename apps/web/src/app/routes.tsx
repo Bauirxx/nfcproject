@@ -9,6 +9,7 @@ import { CardDetailPage } from '@/features/cards/card-detail-page';
 import { CardsPage } from '@/features/cards/cards-page';
 import { CompaniesPage } from '@/features/companies/companies-page';
 import { CompanyFormPage } from '@/features/companies/company-form-page';
+import { MembersPage } from '@/features/members/members-page';
 import { SendContactPage } from '@/features/contact-sending/send-contact-page';
 import { ProfileEditorPage } from '@/features/profiles/profile-editor-page';
 import { ProfilesPage } from '@/features/profiles/profiles-page';
@@ -66,7 +67,7 @@ export const routes: RouteObject[] = [
               },
               {
                 element: <RequirePermission permission="members.manage" />,
-                children: [{ path: 'membros', element: <PlaceholderPage title={navTexts.items.members} /> }],
+                children: [{ path: 'membros', element: <MembersPage /> }],
               },
               {
                 element: <RequirePermission permission="cards.view" />,
