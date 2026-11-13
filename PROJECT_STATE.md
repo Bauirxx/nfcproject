@@ -1,6 +1,6 @@
 # PROJECT_STATE — NFC Business
 
-Atualizado em 2026-11-12.
+Atualizado em 2026-11-13.
 
 ## Identificação
 
@@ -54,7 +54,7 @@ O que mais existe e está verificado:
 | T-FE-01 Base do projeto | Em revisão | `main.tsx` feito; faltam `playwright.config.ts` (T-FE-27) e `scripts/check-bundle-size.mjs` (T-FE-28) |
 | T-FE-03 Cliente da API | Em revisão | Código, testes e ADR-0005 prontos; `lib/parsed-api.ts` ganha teste com o primeiro consumidor (T-FE-06) |
 | T-FE-04 API simulada (MSW) | Em revisão | Código, testes, ADR-0009 e grafo prontos; `main.tsx` chama `startMockApi`; falta confirmar o worker no browser real (ao abrir `pnpm dev`) |
-| T-FE-14/15/16 Perfis | Planeada | Lista, editor (campos, contactos ordenáveis, visibilidade, foto com recorte) e tema (próxima tarefa) |
+| T-FE-14/15/16 Perfis | Em desenvolvimento | Blocos base já escritos (ver registo de continuidade). Faltam editor de tema, diálogo de criar, páginas de lista e editor, ligar as rotas e os testes |
 | T-FE-11 Envio do dono na página pública | Planeada | Depende do formulário de envio (T-FE-17, passo 5) |
 
 ## Pendentes
@@ -86,6 +86,7 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 ## Alterações recentes
 
+- 2026-11-13: T-FE-14/15/16 (perfis) — checkpoint WIP (ainda **não concluída**). Escritos os blocos base, todos a passar no `typecheck` e no `lint`, sem afetar os 313 testes existentes (nenhum ficheiro anterior foi alterado): textos (`shared/i18n/panel/profiles.ts`), componentes base (`shared/components/ui/{switch,textarea,color-field}.tsx`), validação de imagem no cliente (`shared/lib/image-validation.ts`), fluxo de upload (`features/profiles/upload.ts`), queries (`features/profiles/queries.ts`), lista reordenável (`features/profiles/sortable-list.tsx`), recorte de foto (`features/profiles/photo-crop-dialog.tsx`) e campo de foto (`features/profiles/photo-field.tsx`). Falta o resto (ver registo de continuidade).
 - 2026-11-12: cliente da API e testes; textos centralizados (`shared/i18n`); início da API simulada; primeiro commit no GitHub.
 - 2026-11-12: handlers de autenticação e conta da API simulada (sessão, login, MFA, recuperação, convite, conta, sessões) com 34 testes; `endCurrentSession` no domínio; helper `handlers/testing.ts` para os testes dos handlers.
 - 2026-11-12: handlers de uploads (URL assinado, magic bytes, `consumeUpload`), empresas e membros com 32 testes; `inviteUser` e `emailTaken` no domínio; `uploadImage` no helper de testes.
@@ -144,11 +145,22 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
   - Estatísticas: base determinística por cartão e dia, mais os contadores registados.
   - Uploads: `POST /api/uploads/sign` devolve `/api/uploads/<fileId>`; o `PUT` valida tamanho e magic bytes com `detectImageType`.
 - Verificado no ambiente de testes (Vitest com jsdom): o MSW resolve URLs relativos, aceita `AbortSignal`, corpos `Blob` e respostas lançadas pelos resolvers. No MSW 3 a opção chama-se `onUnhandledFrame` (não `onUnhandledRequest`).
-- Próxima tarefa — T-FE-14/15/16 (perfis), por ordem sugerida:
-  1. `features/profiles/queries.ts`: `useProfilesQuery` (lista com pesquisa e paginação; cuidado com `z.coerce` — usar um tipo de params concreto como em `cards/queries.ts`), `useProfileQuery`, `useCreateProfile`, `useUpdateProfile`. Endpoints em `endpoints.profiles`.
-  2. `ProfilesPage` (lista + pesquisa + criar) e `ProfileEditorPage` (`/painel/perfis/:id`): campos (nome, cargo, empresa, bio) com pré-visualização do telefone (`formatPhoneDisplay`/`normalizePhone` de `@nfc-business/shared/links`/`validators`), contactos com reordenação por arrastar (dnd-kit) **e** por botões cima/baixo (WCAG 2.5.7), interruptor de visibilidade por campo e por contacto, redes sociais, e foto com validação no cliente (MIME, magic bytes com `detectImageType`, 2 MB, dimensões) e recorte.
-  3. Tema do perfil (T-FE-23 pode vir aqui ou separado): editor de cores com verificação de contraste AA que bloqueia guardar (`meetsContrast` de `@nfc-business/shared/contrast`; o schema `profileThemeInputSchema` já valida).
-  4. Uploads: `POST /api/uploads/sign` → `PUT` do ficheiro; usar o `fileId` em `photoFileId`/`theme.logoFileId`. Ver o fluxo em `handlers/uploads.ts` e o helper de testes `uploadImage`.
-  5. Testes esperados: `ProfileEditorPage`, `SortableList`, `image-validation`, `PhotoCropDialog`, `ThemeEditor`, `contrast` (este último já existe no pacote partilhado).
+- Tarefa em curso — T-FE-14/15/16 (perfis). **Checkpoint WIP** (typecheck 0, lint 0, 313 testes intactos). Já escrito e verificado:
+  - `shared/i18n/panel/profiles.ts`: `profileTexts`, `contactTypeLabels`/`contactTypePlaceholders`, `socialPlatformLabels`, `themeTemplateLabels`. (Importa-se direto, como `cards.ts`; não está no `panel/index.ts`.)
+  - `shared/components/ui/switch.tsx`: `Switch` (role="switch", sem Radix). `shared/components/ui/textarea.tsx`: `Textarea` + `TextareaField` (com `hideOptional`). `shared/components/ui/color-field.tsx`: `ColorField` (seletor nativo `<input type="color">` + campo de texto ligados ao mesmo hex).
+  - `shared/lib/image-validation.ts`: `checkSizeAndType` (puro: 2 MB + magic bytes via `detectImageType`), `checkImageFile(file, limits, measure?)` (injeta `measure` para testes; por defeito `measureImageElement` via DOM), `PHOTO_LIMITS`/`LOGO_LIMITS` (de `LIMITS.photo`/`LIMITS.logo`).
+  - `features/profiles/upload.ts`: `uploadImage(blob, purpose)` → `POST /api/uploads/sign` (contentType = `blob.type`, size = `blob.size`) e `PUT` do blob; devolve `fileId`.
+  - `features/profiles/queries.ts`: `useProfilesQuery` (params concretos, `keepPreviousData`), `useProfileQuery`, `useCreateProfile`, `useUpdateProfile` (meta `inlineError`, atualiza a cache do detalhe), `useCompanyMembersQuery(enabled)` (seletor de dono; só para quem tem `members.manage`). `profileKeys`.
+  - `features/profiles/sortable-list.tsx`: `SortableList` genérico (dnd-kit **e** botões cima/baixo, WCAG 2.5.7); transform/transition por `style` inline (CSP-safe). Props: `ids`, `onMove(from,to)`, `labels`, `renderItem(id,index)`.
+  - `features/profiles/photo-crop-dialog.tsx`: `PhotoCropDialog` + `computeCropSource(natW,natH,zoom,offsetX,offsetY)` (puro, exportado para teste). Recorte quadrado para `OUTPUT_SIZE=512`, saída `image/jpeg`; fallback ao ficheiro original se não houver canvas (jsdom).
+  - `features/profiles/photo-field.tsx`: `PhotoField` + tipo `PhotoState` (`keep`|`remove`|`replace`), valida com `checkImageFile(PHOTO_LIMITS)`, abre o recorte, guarda o blob pendente; revoga os object URLs no unmount.
+- Falta (próxima sessão, por ordem):
+  1. `features/profiles/theme-editor.tsx` (`ThemeEditor`): modelo (`themeTemplateLabels`), 3 cores (`ColorField`), logótipo (upload `theme_logo`), verificação de contraste AA ao vivo com `contrastRatio`/`meetsContrast` (`CONTRAST_AA_TEXT`/`CONTRAST_AA_LARGE`) que **bloqueia** o guardar; PATCH próprio `{ theme }` (só `themes.manage`, senão o backend dá 403). `profileThemeInputSchema` já valida.
+  2. `features/profiles/profile-create-dialog.tsx` (`ProfileCreateDialog`): `displayName` (`personNameSchema`) + dono opcional (só `profiles.assignOwner`, via `useCompanyMembersQuery`). POST → navegar para `/painel/perfis/:id`.
+  3. `features/profiles/profiles-page.tsx` (`ProfilesPage`): lista (pesquisa com `useDebouncedValue` + paginação), colunas nome/cargo/dono/cartões/atualizado, `EmptyState`, criar.
+  4. `features/profiles/profile-editor-page.tsx` (`ProfileEditorPage`, `/painel/perfis/:id`): RHF com `zodResolver(profileFieldsSchema)`; nome/cargo/empresa/bio (`TextareaField`), interruptores de visibilidade (`Switch` em `Controller`), `PhotoField`, contactos e redes via `useFieldArray` + `SortableList` (ids = `field.id` do RHF), telefone/whatsapp normalizado no `onBlur` com `normalizePhone` e pré-visualização `formatPhoneDisplay`, dono (só `profiles.assignOwner`). Ids de novos itens: `crypto.randomUUID()`. No submit: se `PhotoState==='replace'` → `uploadImage(blob,'profile_photo')` → `photoFileId`; `'remove'` → `photoFileId:null`; `'keep'` → omitir. **Não** enviar `theme` nem `ownerUserId` sem a permissão respetiva.
+  5. Ligar as rotas em `app/routes.tsx` (`perfis` → `ProfilesPage`, `perfis/:id` → `ProfileEditorPage`, em vez dos `PlaceholderPage`).
+  6. Testes esperados: `image-validation.test.ts` (shared/lib; testa `checkSizeAndType` e `checkImageFile` com `measure` falso), `sortable-list.test.tsx` (botões cima/baixo → `onMove`), `photo-crop-dialog.test.tsx` (`computeCropSource`), `theme-editor.test.tsx` (contraste bloqueia/permite guardar), `profiles-page.test.tsx` (lista/pesquisa/criar), `profile-editor-page.test.tsx` (carregar, editar campo, adicionar contacto, guardar). Dados de demonstração úteis: `u_ana` (company_admin ACME), perfis `p_paula`/`p_carlos`/`p_recepcao`.
+  7. DoD: atualizar `docs/codebase-graph.md` (secção de perfis) e este ficheiro, e só então marcar a tarefa como Concluída.
 - T-FE-11 (envio do dono na página pública) fica para o passo 5 (envio de contacto, T-FE-17), quando existir o `SendContactForm` reutilizável; o plano está no histórico deste ficheiro.
 - Passos para retomar: ver `README.md` (instalação) e depois correr `pnpm typecheck`, `pnpm lint` e `pnpm test` antes de continuar. Node 24 ativo (`nvm use 24.22.2`).
