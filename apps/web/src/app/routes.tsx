@@ -10,6 +10,7 @@ import { CardsPage } from '@/features/cards/cards-page';
 import { CompaniesPage } from '@/features/companies/companies-page';
 import { CompanyFormPage } from '@/features/companies/company-form-page';
 import { DashboardPage } from '@/features/dashboard/dashboard-page';
+import { StatsPage } from '@/features/analytics/stats-page';
 import { MembersPage } from '@/features/members/members-page';
 import { SendContactPage } from '@/features/contact-sending/send-contact-page';
 import { ProfileEditorPage } from '@/features/profiles/profile-editor-page';
@@ -94,7 +95,7 @@ export const routes: RouteObject[] = [
               },
               {
                 element: <RequirePermission permission="analytics.view" />,
-                children: [{ path: 'estatisticas', element: <PlaceholderPage title={navTexts.items.analytics} /> }],
+                children: [{ path: 'estatisticas', element: <StatsPage /> }],
               },
               {
                 element: <RequirePermission permission="audit.view" />,
