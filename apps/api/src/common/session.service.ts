@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
 import { SupabaseAuthService } from '../supabase/supabase-auth.service';
 import type { SessionUser } from './session-user';
@@ -21,7 +21,7 @@ export function readCookie(header: string | undefined, name: string): string | n
 
 @Injectable()
 export class SessionService {
-  constructor(private readonly supabaseAuth: SupabaseAuthService) {}
+  constructor(@Inject(SupabaseAuthService) private readonly supabaseAuth: SupabaseAuthService) {}
 
   /** Utilizador da sessão a partir do pedido, ou `null` se não houver sessão válida. */
   async getUser(request: Request): Promise<SessionUser | null> {

@@ -148,7 +148,7 @@ Testes: `features/auth/*.test.tsx`, `features/public-card/public-card-page.test.
 
 ## 3.7 Backend (`apps/api`, confirmado — fase 1, fundação)
 
-NestJS 11 com adaptador Express (ADR-0010). Fundação construída; a ligação ao Supabase ainda não (precisa de credenciais do dono do produto).
+NestJS 11 com adaptador Express (ADR-0010). Fundação, ligação ao Supabase Auth (ADR-0011) e empacotamento executável com esbuild para deploy (ADR-0012) feitos. Build: `pnpm --filter @nfc-business/api build` → `dist/server.cjs` (arranque `node dist/server.cjs`). DI explícita (`@Inject`); serviços base no `CoreModule` global.
 
 | Ficheiro | Papel | Depende de |
 |----------|-------|------------|

@@ -137,6 +137,7 @@ export default tseslint.config(
       'apps/web/e2e/**/*.ts',
       'apps/web/scripts/**/*.mjs',
       'apps/api/**/*.ts',
+      'apps/api/*.mjs',
       'packages/shared/**/*.ts',
       '*.mjs',
     ],

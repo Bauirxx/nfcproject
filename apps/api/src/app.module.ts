@@ -3,16 +3,13 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 import { AuthGuard } from './common/auth.guard';
-import { SessionService } from './common/session.service';
+import { CoreModule } from './common/core.module';
 import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
-import { SupabaseAuthService } from './supabase/supabase-auth.service';
 
 @Module({
-  imports: [ConfigModule, HealthModule, AuthModule],
+  imports: [ConfigModule, CoreModule, HealthModule, AuthModule],
   providers: [
-    SupabaseAuthService,
-    SessionService,
     // Guard global: negar por defeito (CLAUDE.md, regra 2).
     { provide: APP_GUARD, useClass: AuthGuard },
     // Erros sempre no formato do contrato `{ error: { code } }`.

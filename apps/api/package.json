@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Backend NestJS (BFF) do NFC Business: única parte que fala com o Supabase e o fornecedor de email",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node esbuild.mjs",
+    "start": "node dist/server.cjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^24.19.2",
+    "esbuild": "^0.28.2",
     "typescript": "6.0.3",
     "vitest": "^5.1.0"
   }

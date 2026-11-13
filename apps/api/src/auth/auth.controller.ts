@@ -14,8 +14,8 @@ export class AuthController {
   private readonly secure: boolean;
 
   constructor(
-    private readonly supabaseAuth: SupabaseAuthService,
-    private readonly sessions: SessionService,
+    @Inject(SupabaseAuthService) private readonly supabaseAuth: SupabaseAuthService,
+    @Inject(SessionService) private readonly sessions: SessionService,
     @Inject(ENV) env: Env,
   ) {
     this.secure = env.NODE_ENV !== 'development';

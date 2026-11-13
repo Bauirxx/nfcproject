@@ -1,4 +1,4 @@
-import { type CanActivate, type ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { type CanActivate, type ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { IS_PUBLIC_KEY } from './public.decorator';
@@ -15,8 +15,8 @@ export interface AuthedRequest extends Request {
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
-    private readonly reflector: Reflector,
-    private readonly sessions: SessionService,
+    @Inject(Reflector) private readonly reflector: Reflector,
+    @Inject(SessionService) private readonly sessions: SessionService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
