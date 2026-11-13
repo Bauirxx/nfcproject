@@ -1,0 +1,29 @@
+{
+  "name": "@nfc-business/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend NestJS (BFF) do NFC Business: única parte que fala com o Supabase e o fornecedor de email",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.24",
+    "@nestjs/core": "^11.1.24",
+    "@nestjs/platform-express": "^11.1.24",
+    "@nfc-business/shared": "workspace:*",
+    "helmet": "^8.1.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.19.2",
+    "typescript": "6.0.3",
+    "vitest": "^5.1.0"
+  }
+}

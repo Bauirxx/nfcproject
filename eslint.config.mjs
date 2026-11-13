@@ -132,7 +132,21 @@ export default tseslint.config(
 
   // Código que corre em Node
   {
-    files: ['apps/web/*.{ts,mjs}', 'apps/web/e2e/**/*.ts', 'apps/web/scripts/**/*.mjs', 'packages/shared/**/*.ts', '*.mjs'],
+    files: [
+      'apps/web/*.{ts,mjs}',
+      'apps/web/e2e/**/*.ts',
+      'apps/web/scripts/**/*.mjs',
+      'apps/api/**/*.ts',
+      'packages/shared/**/*.ts',
+      '*.mjs',
+    ],
     languageOptions: { globals: globals.node },
+  },
+
+  // Backend NestJS: a injeção de dependências lê os tipos do construtor por `emitDecoratorMetadata`,
+  // pelo que esses imports têm de ser de valor (não `import type`).
+  {
+    files: ['apps/api/**/*.ts'],
+    rules: { '@typescript-eslint/consistent-type-imports': 'off' },
   },
 );

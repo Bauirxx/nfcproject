@@ -8,7 +8,7 @@ Atualizado em 2026-11-12. Mapa dos módulos, ficheiros principais, endpoints, ta
 |--------|---------|-------|--------|
 | `@nfc-business/shared` | `packages/shared` | Contrato partilhado com o futuro backend: constantes, validadores, links, permissões, contraste, imagens e schemas Zod | Confirmado (82 testes) |
 | `@nfc-business/web` | `apps/web` | Frontend: página pública, painel e API simulada | Confirmado (em curso) |
-| `apps/api` | — | Backend NestJS (fases 1 e 2 do prompt mestre) | Inferido (não existe) |
+| `@nfc-business/api` | `apps/api` | Backend NestJS (BFF): única parte que fala com o Supabase e o email | Confirmado (fase 1 iniciada: fundação, 10 testes) |
 
 ## 2. Pacote partilhado (`packages/shared/src`)
 
@@ -139,6 +139,23 @@ Testes: `features/auth/*.test.tsx`, `features/public-card/public-card-page.test.
 | `src/features/{companies,members,analytics,themes,audit}/` | Ecrãs por funcionalidade (substituem os `PlaceholderPage`) | T-FE-19 a T-FE-25 |
 | `e2e/`, `playwright.config.ts` | Cinco fluxos principais contra o build com CSP | T-FE-27 |
 | `scripts/check-bundle-size.mjs` | Orçamento de JavaScript da página pública | T-FE-28 |
+
+## 3.7 Backend (`apps/api`, confirmado — fase 1, fundação)
+
+NestJS 11 com adaptador Express (ADR-0010). Fundação construída; a ligação ao Supabase ainda não (precisa de credenciais do dono do produto).
+
+| Ficheiro | Papel | Depende de |
+|----------|-------|------------|
+| `src/main.ts` | Arranque: `helmet` (HSTS, CSP, Referrer-Policy, nosniff), `Permissions-Policy`, sem `X-Powered-By`, CORS fechado, prefixo `/api`, validação do ambiente | `@nestjs/core`, `@nestjs/platform-express`, `helmet`, `config/env` |
+| `src/app.module.ts` | Módulo raiz: `HealthModule`, `SessionService`, `AuthGuard` global (`APP_GUARD`), `ApiExceptionFilter` global (`APP_FILTER`) | módulos e `common/*` abaixo |
+| `src/config/env.ts` | `loadEnv` (Zod): valida o ambiente no arranque; Supabase obrigatório em produção | `zod` |
+| `src/common/auth.guard.ts` | `AuthGuard`: negar por defeito; só `@Public()` passa sem sessão (critério de saída da fase 1) | `@nestjs/core` (`Reflector`), `public.decorator`, `session.service` |
+| `src/common/public.decorator.ts` | `@Public()` e `IS_PUBLIC_KEY` | `@nestjs/common` |
+| `src/common/session.service.ts` | `SessionService` (lê o cookie HttpOnly), `readCookie`; `verifyAccessToken` por ligar ao Supabase Auth | `@nestjs/common`, `express` (tipo) |
+| `src/common/api-exception.filter.ts` | `ApiExceptionFilter` e `resolveError`: erros em `{ error: { code } }`, sem texto do servidor | `@nestjs/common`, `express` (tipo) |
+| `src/health/health.controller.ts` | `GET /api/health` (`@Public`) → `{ status: 'ok' }` | `@nestjs/common`, `public.decorator` |
+
+Testes (Vitest): `config/env.test.ts`, `common/auth.guard.test.ts`, `common/api-exception.filter.test.ts` (10 testes). A ligação ao Supabase, o `ValidationPipe` global com os schemas Zod partilhados e o empacotamento executável ficam para os próximos blocos (ADR-0010).
 
 ## 4. Endpoints
 

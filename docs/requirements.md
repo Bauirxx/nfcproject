@@ -4,7 +4,7 @@ Fonte dos requisitos: `CLAUDE.md` (prompt mestre) e `docs/prompts/FRONTEND.md`. 
 
 Estados das tarefas: Não iniciada, Planeada, Em desenvolvimento, Em revisão, Em testes, Bloqueada, Concluída, Cancelada. O progresso conta-se por tarefas e critérios verificados (ver `PROJECT_STATE.md`).
 
-Âmbito atual: **frontend** (`apps/web` e `packages/shared`). Os requisitos de backend, base de dados e operação do prompt mestre serão acrescentados quando essas fases arrancarem.
+Âmbito: **frontend** (`apps/web` e `packages/shared`) e, desde 2026-11-13, o **backend** (`apps/api`) — ver [Requisitos do backend](#requisitos-do-backend). O frontend continua sobre a API simulada (MSW) até existirem endpoints reais.
 
 ## Requisitos funcionais do frontend
 
@@ -140,6 +140,19 @@ Estados das tarefas: Não iniciada, Planeada, Em desenvolvimento, Em revisão, E
 | T-FE-26 | Suite de testes de componentes e acessibilidade | 9 | RNF-FE-03, RNF-FE-09 | Planeada |
 | T-FE-27 | Playwright: cinco fluxos, CSP e 360 px | 9 | RNF-FE-01, RNF-FE-06, RNF-FE-09 | Planeada |
 | T-FE-28 | Verificação do orçamento de JavaScript | 9 | RNF-FE-02 | Planeada |
+
+## Requisitos do backend
+
+Fonte: `CLAUDE.md` (arquitetura, endpoints, regras de segurança e fases). O backend é um monólito modular em NestJS 11 (adaptador Express), a única parte que fala com o Supabase e o email. Decisões de fundação no ADR-0010.
+
+| ID | Tarefa | Fase | Estado |
+|----|--------|------|--------|
+| T-BE-01 | Fundação: pacote `apps/api`, segurança (helmet, CORS fechado, cabeçalhos), guard global negar-por-defeito com `@Public()`, filtro de erros no formato do contrato, validação do ambiente, health público | 1 | Em desenvolvimento |
+| T-BE-02 | Supabase: projeto, schema `app`, RLS, papel `app_backend`, ligação do `SessionService` ao Supabase Auth e login BFF por cookies | 1 | Bloqueada (precisa de credenciais do dono do produto) |
+| T-BE-03 | `ValidationPipe` global com os schemas Zod partilhados; empacotamento executável do backend | 1 | Não iniciada |
+| T-BE-04+ | Módulos de domínio (empresas, membros, cartões, perfis, partilha, envio, estatísticas, temas, auditoria) sobre o contrato do ADR-0004 | 2–3 | Não iniciada |
+
+Critério de saída da fase 1 (CLAUDE.md): nenhum endpoint responde sem autenticação, exceto os `@Public()`. O guard global já o garante; falta a autenticação real (T-BE-02).
 
 ## Pressupostos
 
