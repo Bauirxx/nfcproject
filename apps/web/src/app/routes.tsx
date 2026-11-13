@@ -7,6 +7,8 @@ import { RecoverPasswordPage } from '@/features/auth/recover-password-page';
 import { ResetPasswordPage } from '@/features/auth/reset-password-page';
 import { CardDetailPage } from '@/features/cards/card-detail-page';
 import { CardsPage } from '@/features/cards/cards-page';
+import { ProfileEditorPage } from '@/features/profiles/profile-editor-page';
+import { ProfilesPage } from '@/features/profiles/profiles-page';
 import { navTexts } from '@/shared/i18n/panel/nav';
 import { AppShell } from './app-shell';
 import { ForbiddenPage, NotFoundPage, ServerErrorPage, SessionExpiredPage } from './error-pages';
@@ -73,8 +75,8 @@ export const routes: RouteObject[] = [
               {
                 element: <RequirePermission permission="profiles.view" />,
                 children: [
-                  { path: 'perfis', element: <PlaceholderPage title={navTexts.items.profiles} /> },
-                  { path: 'perfis/:id', element: <PlaceholderPage title={navTexts.items.profiles} /> },
+                  { path: 'perfis', element: <ProfilesPage /> },
+                  { path: 'perfis/:id', element: <ProfileEditorPage /> },
                 ],
               },
               {
