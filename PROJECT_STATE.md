@@ -97,6 +97,7 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 ## Alterações recentes
 
+- 2026-11-13: fundação da base de dados — `supabase/migrations/0001_foundation.sql` (schema `app`, papel `app_backend`, tabelas `companies`/`users`/`profiles`/`cards`, vista `public_profiles`, RLS por `current_setting('app.company_id')`) e `supabase/README.md`. Por aplicar e verificar no Supabase.
 - 2026-11-13: login real do Supabase verificado de ponta a ponta (utilizador Arsénio Baquir = platform_admin). Backend tornado executável: empacotado com esbuild num `dist/server.cjs` (resolve o arranque e o consumo do pacote partilhado), DI explícita com `@Inject`, `CoreModule` global; a correr localmente (`/api/health` 200, `/api/auth/session` `{user:null}`). Configuração de deploy: `render.yaml` (backend), `vercel.json` (frontend, com rewrite `/api` e cabeçalhos de segurança), `docs/deploy.md` e ADR-0012.
 
 - 2026-11-13: login BFF no backend (`POST /api/auth/login` com cookies HttpOnly, `logout`, `GET /api/auth/session`), a autenticar pelo Supabase. +4 testes (397). Falta criar o utilizador no Supabase para o login real.
@@ -156,7 +157,7 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 ### Próxima tarefa, por ordem
 
 1. **Deploy (o dono executa):** seguir `docs/deploy.md` — publicar o backend no Render (com as chaves do Supabase), trocar o URL do Render em `vercel.json`, publicar o frontend no Vercel. Depois do deploy: o **login funciona**; os restantes ecrãs dão erro até os endpoints existirem no backend.
-2. **Backend (construir os endpoints):** sobre o contrato do ADR-0004, começando pelos mais usados (perfis/cartões públicos, depois os do painel), com `ValidationPipe`/`ZodValidationPipe` e a posse por empresa. Em paralelo: schema `app`/RLS/papel `app_backend` (destino do papel/empresa, substituindo o `app_metadata` interino) e MFA via Supabase.
+2. **Backend (construir os endpoints):** (a) aplicar `supabase/migrations/0001_foundation.sql` no Supabase (ver `supabase/README.md`) e a migração 0002 (contact_shares, analytics_events, audit_logs); (b) ligação direta do backend ao Postgres com o papel `app_backend`, a definir `app.company_id`/`app.user_id`/`app.is_platform_admin` por pedido; (c) os módulos de endpoints sobre o ADR-0004 (começar por público e painel), com `ZodValidationPipe` e posse por empresa; (d) migrar o papel/empresa do `app_metadata` para `app.users`; (e) MFA via Supabase.
 2. **Frontend, em paralelo (não bloqueado):** T-FE-23 temas (ecrã dedicado de personalização; o editor de tema por perfil já existe em `features/profiles/theme-editor.tsx` — ver o que o ecrã de temas acrescenta face a isso), T-FE-24 auditoria (tabela filtrável por ação, autor e datas; `GET /api/audit`), T-FE-25 conta (dados pessoais, palavra-passe, MFA e sessões; endpoints `/api/auth/*` já no cliente e nos handlers).
 5. **T-FE-21** Dashboard, **T-FE-22** Estatísticas e CSV, **T-FE-23** Temas (ecrã dedicado), **T-FE-24** Auditoria, **T-FE-25** Conta.
 6. **T-FE-26/27/28** Suite de testes de acessibilidade (axe), Playwright (cinco fluxos, CSP, 360 px) e `scripts/check-bundle-size.mjs`.
