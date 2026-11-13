@@ -7,6 +7,7 @@ import { RecoverPasswordPage } from '@/features/auth/recover-password-page';
 import { ResetPasswordPage } from '@/features/auth/reset-password-page';
 import { CardDetailPage } from '@/features/cards/card-detail-page';
 import { CardsPage } from '@/features/cards/cards-page';
+import { SendContactPage } from '@/features/contact-sending/send-contact-page';
 import { ProfileEditorPage } from '@/features/profiles/profile-editor-page';
 import { ProfilesPage } from '@/features/profiles/profiles-page';
 import { navTexts } from '@/shared/i18n/panel/nav';
@@ -81,7 +82,7 @@ export const routes: RouteObject[] = [
               },
               {
                 element: <RequirePermission permission="contact.send" />,
-                children: [{ path: 'enviar-contacto', element: <PlaceholderPage title={navTexts.items.contact} /> }],
+                children: [{ path: 'enviar-contacto', element: <SendContactPage /> }],
               },
               {
                 element: <RequirePermission permission="themes.manage" />,

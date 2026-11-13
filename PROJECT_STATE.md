@@ -30,6 +30,7 @@ Cumprem a Definition of Done:
 - T-FE-10 Página pública (cartão por token `/c/:token` e perfil por endereço amigável `/p/:slug`): render estático e leve a partir de `main.tsx`, página neutra «Cartão indisponível» para tudo o que não seja um cartão ativo com perfil, ações (VCF, Ligar, WhatsApp, Email, Website, Localização) e redes sociais a partir de dados saneados, tema do perfil aplicado por estilos inline, eventos públicos (`view`, `whatsapp_click`, `email_click`, `vcf_download`), QR a pedido (`uqr` por `import()`) e partilha (`navigator.share` com cópia de link). 4 testes. Build confirmado: chunk inicial 78 KB gzip (sem router/TanStack Query/RHF/Zod); painel e QR carregam à parte. Falta o envio do dono (T-FE-11).
 - T-FE-12/13 Cartões: lista com pesquisa (debounce), filtro por estado e paginação; criação (com perfil opcional); detalhe com endereço do chip (copiar), QR Code no ecrã e transferência em PNG e SVG, associação de perfil, ações de estado (ativar/desativar/perdido/bloquear) com confirmação nas irreversíveis e histórico. 8 testes (inclui `qr.test.ts`).
 - T-FE-14/15/16 Perfis: lista (pesquisa com debounce, paginação, posse por papel), criar (nome e dono opcional), editor (nome/cargo/empresa/apresentação, interruptores de visibilidade, contactos e redes reordenáveis por arrastar e por botões, fotografia com recorte, dono) e editor de tema (modelo, três cores com verificação de contraste AA ao vivo que bloqueia o guardar, logótipo). 25 testes novos (inclui `image-validation`, `sortable-list`, `photo-crop-dialog`, `theme-editor`, `profiles-page`, `profile-editor-page`).
+- T-FE-17/18 Envio de contacto: formulário reutilizável (`SendContactForm`) com perfil pré-selecionado, destinatário validado (email, ou telefone normalizado para E.164 com +258 por defeito), canal Email/WhatsApp/SMS, nota até 200 caracteres e pré-visualização da mensagem; Email envia pela API, WhatsApp abre `wa.me` e SMS abre `sms:`, todos registando o envio; histórico com destinatário mascarado e mensagem clara de limite (429). 4 testes.
 
 O que mais existe e está verificado:
 
@@ -55,7 +56,7 @@ O que mais existe e está verificado:
 | T-FE-01 Base do projeto | Em revisão | `main.tsx` feito; faltam `playwright.config.ts` (T-FE-27) e `scripts/check-bundle-size.mjs` (T-FE-28) |
 | T-FE-03 Cliente da API | Em revisão | Código, testes e ADR-0005 prontos; `lib/parsed-api.ts` ganha teste com o primeiro consumidor (T-FE-06) |
 | T-FE-04 API simulada (MSW) | Em revisão | Código, testes, ADR-0009 e grafo prontos; `main.tsx` chama `startMockApi`; falta confirmar o worker no browser real (ao abrir `pnpm dev`) |
-| T-FE-11 Envio do dono na página pública | Planeada | Depende do formulário de envio (T-FE-17, passo 5) |
+| T-FE-11 Envio do dono na página pública | Planeada | Já existe o `SendContactForm` reutilizável; falta o botão/painel na página pública (carregado por `import()`) |
 
 ## Pendentes
 
@@ -86,6 +87,7 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 ## Alterações recentes
 
+- 2026-11-13: T-FE-17/18 (envio de contacto) **concluída**. `features/contact-sending/*` (queries, `SendContactForm` reutilizável, `ContactHistory`, página) e `shared/i18n/panel/contact.ts`; rota `/painel/enviar-contacto` ligada. +4 testes (342 no total); build de produção confirmado (página pública 78,9 KB gzip). Grafo atualizado.
 - 2026-11-13: T-FE-14/15/16 (perfis) **concluída**. Acrescentados `features/profiles/{profile-create-dialog,profiles-page,theme-editor,profile-editor-page}.tsx` e os testes de `image-validation`, `sortable-list`, `photo-crop-dialog`, `theme-editor`, `profiles-page` e `profile-editor-page`; rotas `/painel/perfis` e `/painel/perfis/:id` ligadas. +25 testes (338 no total); build de produção confirmado (página pública 78 KB gzip). Grafo e requisitos atualizados.
 - 2026-11-13: T-FE-14/15/16 (perfis) — checkpoint WIP (ainda **não concluída**). Escritos os blocos base, todos a passar no `typecheck` e no `lint`, sem afetar os 313 testes existentes (nenhum ficheiro anterior foi alterado): textos (`shared/i18n/panel/profiles.ts`), componentes base (`shared/components/ui/{switch,textarea,color-field}.tsx`), validação de imagem no cliente (`shared/lib/image-validation.ts`), fluxo de upload (`features/profiles/upload.ts`), queries (`features/profiles/queries.ts`), lista reordenável (`features/profiles/sortable-list.tsx`), recorte de foto (`features/profiles/photo-crop-dialog.tsx`) e campo de foto (`features/profiles/photo-field.tsx`). Falta o resto (ver registo de continuidade).
 - 2026-11-12: cliente da API e testes; textos centralizados (`shared/i18n`); início da API simulada; primeiro commit no GitHub.
@@ -109,13 +111,14 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 338 testes a passar (82 em `packages/shared`, 256 em `apps/web`).
+- `pnpm test`: 342 testes a passar (82 em `packages/shared`, 260 em `apps/web`).
 - `pnpm --filter @nfc-business/web build`: a passar; API simulada fora do bundle; chunk inicial da página pública 78 KB gzip (< 100 KB), sem router/TanStack Query/RHF/Zod (confirmado por `Select-String` no chunk).
 - Playwright: ainda sem testes. Falta o `scripts/check-bundle-size.mjs` (T-FE-28).
 
 ## Registo de continuidade
 
-- Última tarefa: **T-FE-14/15/16 (perfis) — concluída.** Lista, criação, editor de perfil e editor de tema, com 25 testes. `typecheck`, `lint`, `pnpm test` (338) e build de produção a passar.
+- Última tarefa: **T-FE-17/18 (envio de contacto) — concluída.** `SendContactForm` reutilizável (perfil, destinatário, canal, nota, pré-visualização), envio por Email/WhatsApp/SMS, histórico mascarado e mensagem de limite 429, com 4 testes. Antes: T-FE-14/15/16 (perfis). `typecheck`, `lint`, `pnpm test` (342) e build de produção a passar.
+- Decisões do envio de contacto: o seletor só mostra perfis com cartão ativo (`useSendableProfilesQuery`); o remetente da mensagem é o nome do perfil escolhido (coerente com «X partilhou consigo o seu cartão»); o telefone é normalizado com `normalizePhone` (+258 por defeito); o formulário usa `useWatch` (não `form.watch`) para a pré-visualização, por causa da regra do React Compiler no ESLint; a mutação tem `meta: { inlineError: true }` e o erro 429 (com `scope`) aparece no formulário via `errorMessage`; WhatsApp/SMS abrem o link com `window.open(url, '_blank', 'noopener,noreferrer')` **depois** de a API registar o envio.
 - Ficheiros da tarefa: `apps/web/src/features/profiles/*` (base já no repositório desde o checkpoint anterior: `queries`, `upload`, `sortable-list`, `photo-field`, `photo-crop-dialog`, `switch`/`textarea`/`color-field` em `shared/components/ui`, `image-validation` em `shared/lib`; acrescentados nesta sessão: `profile-create-dialog`, `profiles-page`, `theme-editor`, `profile-editor-page` e os respetivos testes). Rotas em `apps/web/src/app/routes.tsx`.
 - Decisões de implementação dos perfis (para não redesenhar):
   - O editor de perfil é um formulário React Hook Form com `zodResolver(profileFieldsSchema)`; o tipo do formulário é `z.input<typeof profileFieldsSchema>` (cargo, empresa e apresentação aceitam `null`; o campo vazio `''` é enviado e o backend simulado converte-o em `null`).
@@ -128,10 +131,8 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 ### Próxima tarefa, por ordem
 
-1. **T-FE-17** Enviar contacto (passo 5): `features/contact-sending` com o `SendContactForm` reutilizável — escolher perfil (pré-selecionado se só houver um), destinatário (nome opcional, telefone E.164 com `+258` por defeito, ou email), canal (Email/WhatsApp/SMS), nota até 200 caracteres sem links nem HTML, pré-visualização da mensagem (`buildShareMessage`). Email → `POST /api/contact-shares` e confirmação; WhatsApp → `wa.me` (`buildWhatsAppUrl`); SMS → `sms:` (`buildSmsUrl`). Rota `/painel/enviar-contacto`.
-2. **T-FE-18** Histórico de envios (destinatário mascarado, data, canal) e mensagens claras de limite (429 com `scope`).
-3. **T-FE-11** Botão «Enviar o meu contacto» na página pública, só para o dono com sessão, reutilizando o `SendContactForm` (carregado a pedido para não entrar no bundle público).
-4. **T-FE-19/20** Empresas (só platform_admin) e membros (company_admin).
+1. **T-FE-11** Botão «Enviar o meu contacto» na página pública (`features/public-card`), só para o dono do cartão com sessão. Reutilizar o `SendContactForm`, carregado por `import()` para **não** entrar no bundle público (a página pública importa de `@/features/contact-sending` cairia na regra do ESLint do bundle; carregar a pedido só quando o dono abre o painel de envio). A página pública já sabe (pela sessão) se o visitante é o dono; falta o botão que abre o painel com o perfil pré-selecionado.
+2. **T-FE-19/20** Empresas (só platform_admin) e membros (company_admin).
 5. **T-FE-21** Dashboard, **T-FE-22** Estatísticas e CSV, **T-FE-23** Temas (ecrã dedicado), **T-FE-24** Auditoria, **T-FE-25** Conta.
 6. **T-FE-26/27/28** Suite de testes de acessibilidade (axe), Playwright (cinco fluxos, CSP, 360 px) e `scripts/check-bundle-size.mjs`.
 7. Em cada passo: atualizar `docs/codebase-graph.md`, `docs/requirements.md` (estados) e este ficheiro; só marcar Concluída o que cumprir a Definition of Done.

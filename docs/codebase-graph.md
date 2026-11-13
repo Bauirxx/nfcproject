@@ -128,15 +128,16 @@ Testes: `app/{app-shell,error-pages,theme-toggle,session-events}.test.tsx`.
 | `features/public-card/` (`mount`, `public-card-page`, `parse-public-card`, `public-events`, `public-qr`) | Página pública leve (ADR-0003): fetch, estados, página neutra, ações saneadas, eventos, QR por `import()`, partilha | `api/client`, `endpoints`, `i18n/public`, `@nfc-business/shared/{links,constants,contrast,validators}`, tipos de `/schemas`, `uqr` (dinâmico) | T-FE-10 |
 | `features/cards/` (`queries`, `cards-page`, `card-create-dialog`, `card-detail-page`, `card-status-badge`, `qr-download`) | Lista (pesquisa/filtro/paginação), criação, detalhe (chip URL, QR PNG/SVG, perfil, ações de estado, histórico) | `lib/parsed-api`, `endpoints`, `shared/schemas`, `shared/components/ui/*`, `app/session`, `shared/lib/{qr,download}` | T-FE-12/13 |
 | `features/profiles/` (`queries`, `upload`, `profiles-page`, `profile-create-dialog`, `profile-editor-page`, `theme-editor`, `sortable-list`, `photo-field`, `photo-crop-dialog`) | Lista (pesquisa/paginação/posse), criar (com dono opcional), editor (campos, visibilidade, contactos e redes reordenáveis por arrastar e por botões, fotografia com recorte, dono), editor de tema com contraste AA que bloqueia o guardar | `lib/parsed-api`/`api/client`, `endpoints`, `shared/schemas`, `shared/components/ui/{switch,textarea,color-field,...}`, `shared/lib/image-validation`, `app/session`, `@dnd-kit/*`, `react-hook-form`, `@nfc-business/shared/{contrast,links,validators}` | T-FE-14/15/16 |
+| `features/contact-sending/` (`queries`, `send-contact-form`, `contact-history`, `send-contact-page`) | Envio por Email (API), WhatsApp (`wa.me`) e SMS (`sms:`), com perfil pré-selecionado, destinatário validado, nota, pré-visualização da mensagem e histórico com destinatário mascarado; o limite 429 aparece no formulário. O `SendContactForm` é reutilizável na página pública (T-FE-11) | `lib/parsed-api`, `endpoints`, `shared/schemas`, `shared/components/ui/*`, `@nfc-business/shared/{links,validators,constants}`, `react-hook-form` | T-FE-17/18 |
 
-Testes: `features/auth/*.test.tsx`, `features/public-card/public-card-page.test.tsx`, `features/cards/*.test.tsx`, `features/profiles/{profiles-page,profile-editor-page,theme-editor,sortable-list,photo-crop-dialog}.test.tsx`, `shared/lib/image-validation.test.ts`. Regra do bundle público verificada no build (secção 6).
+Testes: `features/auth/*.test.tsx`, `features/public-card/public-card-page.test.tsx`, `features/cards/*.test.tsx`, `features/profiles/{profiles-page,profile-editor-page,theme-editor,sortable-list,photo-crop-dialog}.test.tsx`, `features/contact-sending/send-contact-page.test.tsx`, `shared/lib/image-validation.test.ts` (a mensagem de partilha é testada em `packages/shared/src/links.test.ts`). Regra do bundle público verificada no build (secção 6).
 
 ### 3.5 Planeado (inferido, sem código)
 
 | Caminho | Conteúdo previsto | Tarefas |
 |---------|-------------------|---------|
-| `src/features/{contact-sending,companies,members,analytics,themes,audit}/` | Ecrãs por funcionalidade (substituem os `PlaceholderPage`) | T-FE-17 a T-FE-25 |
-| Envio do dono na página pública | Botão e painel de envio a pedido | T-FE-11 |
+| `src/features/{companies,members,analytics,themes,audit}/` | Ecrãs por funcionalidade (substituem os `PlaceholderPage`) | T-FE-19 a T-FE-25 |
+| Envio do dono na página pública | Botão e painel de envio a pedido, reutilizando o `SendContactForm` (carregado por `import()`) | T-FE-11 |
 | `e2e/`, `playwright.config.ts` | Cinco fluxos principais contra o build com CSP | T-FE-27 |
 | `scripts/check-bundle-size.mjs` | Orçamento de JavaScript da página pública | T-FE-28 |
 
