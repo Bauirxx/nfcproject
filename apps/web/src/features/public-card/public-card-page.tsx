@@ -21,17 +21,34 @@ import {
   MessageCircle,
   Phone,
   QrCode,
+  Send,
   Share2,
   UserRound,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@/shared/api/client';
 import { endpoints } from '@/shared/api/endpoints';
+import { loadSession } from '@/shared/api/session';
 import { publicTexts } from '@/shared/i18n/public';
 import { parsePublicCard } from './parse-public-card';
 import { PublicQr } from './public-qr';
 import { recordPublicEvent, type PublicKind } from './public-events';
+
+// Perfil do dono (sem Zod, para não entrar no bundle público). Igual, em forma, ao `SendableProfile`.
+type OwnerProfile = { id: string; displayName: string; activeCardToken: string };
+
+// O painel de envio é carregado a pedido (ADR-0003): só o dono com sessão o abre.
+const PublicSendPanel = lazy(() => import('@/features/contact-sending/public-send-panel'));
+
+/** O visitante é o dono deste perfil e o perfil tem cartão ativo? Lê a resposta privada sem Zod. */
+function ownerProfileOf(data: unknown, userId: string, profileId: string, displayName: string): OwnerProfile | null {
+  if (typeof data !== 'object' || data === null) return null;
+  const record = data as Record<string, unknown>;
+  if (record.ownerUserId !== userId) return null;
+  if (typeof record.activeCardToken !== 'string') return null;
+  return { id: profileId, displayName, activeCardToken: record.activeCardToken };
+}
 
 type LoadState =
   | { status: 'loading' }
@@ -174,10 +191,28 @@ function buildActions(card: PublicCard, kind: PublicKind, id: string, vcfHref: s
 function CardView({ kind, id, card }: { kind: PublicKind; id: string; card: PublicCard }) {
   const [qrOpen, setQrOpen] = useState(false);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
+  const [sendOpen, setSendOpen] = useState(false);
 
   useEffect(() => {
     document.title = `${card.displayName} · ${publicTexts.footer}`;
   }, [card.displayName]);
+
+  // Só o dono do perfil, com sessão, vê o botão de envio (RF-FE-16). Os visitantes anónimos nunca o veem.
+  useEffect(() => {
+    let active = true;
+    loadSession()
+      .then((user) => {
+        if (!active || !user) return;
+        return apiFetch(endpoints.profiles.one(card.profileId)).then((data) => {
+          if (active) setOwnerProfile(ownerProfileOf(data, user.id, card.profileId, card.displayName));
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [card.profileId, card.displayName]);
 
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   const cardUrl = (kind === 'card' ? buildCardUrl(origin, id) : buildProfileUrl(origin, id)) ?? origin;
@@ -306,6 +341,29 @@ function CardView({ kind, id, card }: { kind: PublicKind; id: string; card: Publ
             {shareMessage}
           </p>
         </div>
+
+        {ownerProfile ? (
+          <section className="flex w-full flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSendOpen((open) => !open)}
+              aria-expanded={sendOpen}
+              aria-controls="painel-enviar-contacto"
+              style={{ backgroundColor: primaryColor, color: onPrimary }}
+              className="inline-flex items-center gap-2 rounded-lg px-4 py-3 font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+            >
+              <Send aria-hidden="true" className="size-5 shrink-0" />
+              <span>{sendOpen ? publicTexts.owner.close : publicTexts.owner.send}</span>
+            </button>
+            {sendOpen ? (
+              <div id="painel-enviar-contacto" className="w-full">
+                <Suspense fallback={<p className="text-center text-sm opacity-80">{publicTexts.owner.loading}</p>}>
+                  <PublicSendPanel profile={ownerProfile} />
+                </Suspense>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
         <footer className="pt-4 text-xs opacity-60">{publicTexts.footer}</footer>
       </div>
