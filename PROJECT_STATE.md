@@ -58,7 +58,8 @@ O que mais existe e está verificado:
 | T-FE-01 Base do projeto | Em revisão | `main.tsx` feito; faltam `playwright.config.ts` (T-FE-27) e `scripts/check-bundle-size.mjs` (T-FE-28) |
 | T-FE-03 Cliente da API | Em revisão | Código, testes e ADR-0005 prontos; `lib/parsed-api.ts` ganha teste com o primeiro consumidor (T-FE-06) |
 | T-FE-04 API simulada (MSW) | Em revisão | Código, testes, ADR-0009 e grafo prontos; `main.tsx` chama `startMockApi`; falta confirmar o worker no browser real (ao abrir `pnpm dev`) |
-| T-BE-01 Fundação do backend | Em desenvolvimento | Estrutura, segurança, guard global, filtro de erros, env e health feitos (10 testes). Falta o `ValidationPipe` global (T-BE-03) |
+| T-BE-01 Fundação do backend | Em desenvolvimento | Estrutura, segurança, guard global, filtro de erros, env e health feitos (10 testes) |
+| T-BE-03 Validação com Zod partilhado | Em desenvolvimento | `ZodValidationPipe` a consumir `@nfc-business/shared/schemas` (2 testes); falta aplicar aos endpoints e o empacotamento executável |
 | T-BE-02 Supabase e login BFF | Bloqueada | Precisa de um projeto Supabase e credenciais do dono do produto (URL e chaves num `.env`) |
 
 ## Pendentes
@@ -90,6 +91,7 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 ## Alterações recentes
 
+- 2026-11-13: `ZodValidationPipe` no backend, a validar com os schemas Zod partilhados de `@nfc-business/shared` (422 `validation_failed`); confirma que o backend consome o contrato partilhado. +2 testes (357).
 - 2026-11-13: início do backend `apps/api` (NestJS 11, fase 1 fundação): segurança, guard global negar-por-defeito, filtro de erros do contrato, validação do ambiente e health público, com 10 testes. ADR-0010; requisitos e grafo atualizados. Dependências do NestJS adicionadas ao lockfile.
 - 2026-11-13: T-FE-11 (envio do dono na página pública) **concluída**. `features/contact-sending/public-send-panel.tsx` (lazy, providers próprios) e o botão do dono em `features/public-card/public-card-page.tsx`. +3 testes (345 no total); build confirmado: a página pública mantém-se em ~79 KB gzip e o formulário de envio é um chunk separado. Grafo atualizado.
 - 2026-11-13: T-FE-17/18 (envio de contacto) **concluída**. `features/contact-sending/*` (queries, `SendContactForm` reutilizável, `ContactHistory`, página) e `shared/i18n/panel/contact.ts`; rota `/painel/enviar-contacto` ligada. +4 testes (342 no total); build de produção confirmado (página pública 78,9 KB gzip). Grafo atualizado.
@@ -116,7 +118,7 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 355 testes a passar (82 em `packages/shared`, 263 em `apps/web`, 10 em `apps/api`).
+- `pnpm test`: 357 testes a passar (82 em `packages/shared`, 263 em `apps/web`, 12 em `apps/api`).
 - `pnpm --filter @nfc-business/web build`: a passar; API simulada fora do bundle; chunk inicial da página pública 78 KB gzip (< 100 KB), sem router/TanStack Query/RHF/Zod (confirmado por `Select-String` no chunk).
 - Playwright: ainda sem testes. Falta o `scripts/check-bundle-size.mjs` (T-FE-28).
 

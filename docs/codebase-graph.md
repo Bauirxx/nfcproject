@@ -151,11 +151,12 @@ NestJS 11 com adaptador Express (ADR-0010). Fundação construída; a ligação 
 | `src/config/env.ts` | `loadEnv` (Zod): valida o ambiente no arranque; Supabase obrigatório em produção | `zod` |
 | `src/common/auth.guard.ts` | `AuthGuard`: negar por defeito; só `@Public()` passa sem sessão (critério de saída da fase 1) | `@nestjs/core` (`Reflector`), `public.decorator`, `session.service` |
 | `src/common/public.decorator.ts` | `@Public()` e `IS_PUBLIC_KEY` | `@nestjs/common` |
+| `src/common/zod-validation.pipe.ts` | `ZodValidationPipe`: valida corpo/query com um schema Zod partilhado; erro 422 `validation_failed` | `@nestjs/common`, `@nfc-business/shared/schemas` (tipos), `zod` |
 | `src/common/session.service.ts` | `SessionService` (lê o cookie HttpOnly), `readCookie`; `verifyAccessToken` por ligar ao Supabase Auth | `@nestjs/common`, `express` (tipo) |
 | `src/common/api-exception.filter.ts` | `ApiExceptionFilter` e `resolveError`: erros em `{ error: { code } }`, sem texto do servidor | `@nestjs/common`, `express` (tipo) |
 | `src/health/health.controller.ts` | `GET /api/health` (`@Public`) → `{ status: 'ok' }` | `@nestjs/common`, `public.decorator` |
 
-Testes (Vitest): `config/env.test.ts`, `common/auth.guard.test.ts`, `common/api-exception.filter.test.ts` (10 testes). A ligação ao Supabase, o `ValidationPipe` global com os schemas Zod partilhados e o empacotamento executável ficam para os próximos blocos (ADR-0010).
+Testes (Vitest): `config/env.test.ts`, `common/auth.guard.test.ts`, `common/api-exception.filter.test.ts`, `common/zod-validation.pipe.test.ts` (12 testes). O `ZodValidationPipe` já consome os schemas de `@nfc-business/shared` (prova de que o backend usa o contrato partilhado). A ligação ao Supabase, a aplicação do pipe a endpoints reais e o empacotamento executável ficam para os próximos blocos (ADR-0010).
 
 ## 4. Endpoints
 
