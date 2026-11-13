@@ -7,6 +7,8 @@ import { RecoverPasswordPage } from '@/features/auth/recover-password-page';
 import { ResetPasswordPage } from '@/features/auth/reset-password-page';
 import { CardDetailPage } from '@/features/cards/card-detail-page';
 import { CardsPage } from '@/features/cards/cards-page';
+import { CompaniesPage } from '@/features/companies/companies-page';
+import { CompanyFormPage } from '@/features/companies/company-form-page';
 import { SendContactPage } from '@/features/contact-sending/send-contact-page';
 import { ProfileEditorPage } from '@/features/profiles/profile-editor-page';
 import { ProfilesPage } from '@/features/profiles/profiles-page';
@@ -57,9 +59,9 @@ export const routes: RouteObject[] = [
               {
                 element: <RequirePermission permission="companies.manage" />,
                 children: [
-                  { path: 'empresas', element: <PlaceholderPage title={navTexts.items.companies} /> },
-                  { path: 'empresas/nova', element: <PlaceholderPage title="Nova empresa" /> },
-                  { path: 'empresas/:id', element: <PlaceholderPage title={navTexts.items.companies} /> },
+                  { path: 'empresas', element: <CompaniesPage /> },
+                  { path: 'empresas/nova', element: <CompanyFormPage /> },
+                  { path: 'empresas/:id', element: <CompanyFormPage /> },
                 ],
               },
               {

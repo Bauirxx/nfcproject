@@ -33,7 +33,7 @@ import { PhotoField, type PhotoState } from './photo-field';
 import { useCompanyMembersQuery, useProfileQuery, useUpdateProfile } from './queries';
 import { SortableList } from './sortable-list';
 import { ThemeEditor } from './theme-editor';
-import { uploadImage } from './upload';
+import { uploadImage } from '@/shared/lib/upload';
 
 // O tipo do formulário segue exatamente o schema partilhado (título, empresa e bio aceitam `null`).
 type ProfileFormValues = z.input<typeof profileFieldsSchema>;

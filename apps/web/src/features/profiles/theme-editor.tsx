@@ -15,7 +15,7 @@ import { errorMessage } from '@/shared/i18n/errors';
 import { profileTexts, themeTemplateLabels } from '@/shared/i18n/panel/profiles';
 import { LOGO_LIMITS, checkImageFile, type ImageValidationError } from '@/shared/lib/image-validation';
 import { useUpdateProfile } from './queries';
-import { uploadImage } from './upload';
+import { uploadImage } from '@/shared/lib/upload';
 
 type LogoState = { status: 'keep' } | { status: 'remove' } | { status: 'replace'; blob: Blob; previewUrl: string };
 
