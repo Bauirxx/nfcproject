@@ -35,6 +35,7 @@ Cumprem a Definition of Done:
 - T-BE-01 (parcial) Fundação do backend `apps/api` (NestJS 11, Express): guard global negar-por-defeito com `@Public()`, filtro de erros no formato do contrato, validação do ambiente (Zod), cabeçalhos de segurança (helmet) e CORS fechado, e health público. 10 testes. A autenticação real (Supabase) está bloqueada por falta de credenciais (T-BE-02).
 - T-FE-19 Empresas (só platform_admin): lista com contagens de cartões e membros, criar (convida o primeiro administrador por email), editar, cores da marca e logótipo. 5 testes. O ajudante de upload passou para `shared/lib/upload.ts` (usado por perfis, temas e empresas).
 - T-FE-20 Membros (só company_admin): lista, convidar por email com papel, mudar papel em linha, remover com confirmação; o próprio não se altera nem se remove (desativado na interface, além da proteção da API). 6 testes.
+- T-FE-21 Dashboard: totais dos últimos 30 dias (visitas, cliques, VCF, contactos enviados) de `GET /api/analytics/summary` e atalhos por papel (com «Enviar contacto» em destaque para o dono de perfil). 4 testes. Query de analytics partilhada em `features/analytics/queries.ts`.
 
 O que mais existe e está verificado:
 
@@ -93,6 +94,7 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 ## Alterações recentes
 
+- 2026-11-13: T-FE-21 dashboard (totais dos últimos 30 dias e atalhos por papel) e `features/analytics/queries.ts`, 4 testes (372).
 - 2026-11-13: T-FE-20 membros (lista, convidar, mudar papel, remover com confirmação; o próprio protegido), 6 testes (368).
 - 2026-11-13: T-FE-19 empresas (lista, criar com convite do administrador, editar, marca e logótipo), 5 testes; `uploadImage` movido para `shared/lib/upload.ts`. +5 testes (362).
 - 2026-11-13: `ZodValidationPipe` no backend, a validar com os schemas Zod partilhados de `@nfc-business/shared` (422 `validation_failed`); confirma que o backend consome o contrato partilhado. +2 testes (357).
@@ -122,13 +124,13 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 368 testes a passar (82 em `packages/shared`, 274 em `apps/web`, 12 em `apps/api`).
+- `pnpm test`: 372 testes a passar (82 em `packages/shared`, 278 em `apps/web`, 12 em `apps/api`).
 - `pnpm --filter @nfc-business/web build`: a passar; API simulada fora do bundle; chunk inicial da página pública 78 KB gzip (< 100 KB), sem router/TanStack Query/RHF/Zod (confirmado por `Select-String` no chunk).
 - Playwright: ainda sem testes. Falta o `scripts/check-bundle-size.mjs` (T-FE-28).
 
 ## Registo de continuidade
 
-- Última tarefa: **T-FE-20 membros — concluída** (lista, convidar, mudar papel, remover; o próprio protegido; 6 testes). Antes: T-FE-19 empresas; backend `apps/api` (fase 1, fundação) — T-BE-01 parcial. Estrutura NestJS, segurança, guard global negar-por-defeito (`@Public()`), filtro de erros do contrato, validação do ambiente e health público, com 10 testes. Decisões no ADR-0010. `typecheck`, `lint`, `pnpm test` (355) e `pnpm --filter @nfc-business/api build` a passar. Antes (frontend): T-FE-11 (envio do dono na página pública) — concluída. Botão «Enviar o meu contacto» só para o dono com sessão, que abre o `SendContactForm` via `public-send-panel` carregado por `import()` (fora do bundle público). Antes: T-FE-17/18 (envio de contacto), T-FE-14/15/16 (perfis). `typecheck`, `lint`, `pnpm test` (345) e build de produção a passar (página pública ~79 KB gzip; formulário de envio em chunk separado).
+- Última tarefa: **T-FE-21 dashboard — concluída** (totais dos últimos 30 dias e atalhos por papel; 4 testes; query de analytics reutilizável criada). Antes: T-FE-20 membros, T-FE-19 empresas; backend T-BE-01 parcial. Estrutura NestJS, segurança, guard global negar-por-defeito (`@Public()`), filtro de erros do contrato, validação do ambiente e health público, com 10 testes. Decisões no ADR-0010. `typecheck`, `lint`, `pnpm test` (355) e `pnpm --filter @nfc-business/api build` a passar. Antes (frontend): T-FE-11 (envio do dono na página pública) — concluída. Botão «Enviar o meu contacto» só para o dono com sessão, que abre o `SendContactForm` via `public-send-panel` carregado por `import()` (fora do bundle público). Antes: T-FE-17/18 (envio de contacto), T-FE-14/15/16 (perfis). `typecheck`, `lint`, `pnpm test` (345) e build de produção a passar (página pública ~79 KB gzip; formulário de envio em chunk separado).
 - Estado e decisões do backend (ADR-0010): `apps/api` usa `module: esnext` + `moduleResolution: bundler` (serve o typecheck e o Vitest); `experimentalDecorators` e `emitDecoratorMetadata` ligados para a DI do NestJS; a regra ESLint `consistent-type-imports` está desligada em `apps/api` (os tipos do construtor têm de ser imports de valor). O `SessionService` lê o cookie `nfc_access` mas ainda não valida (sem Supabase, os endpoints protegidos dão 401 — correto para a fundação). **Bloqueios conhecidos, por resolver nos próximos blocos:** a ligação ao Supabase precisa de credenciais do dono do produto; o `dist` emitido ainda não é executável (a resolução `bundler` não põe extensões para Node ESM) e a forma de consumir `@nfc-business/shared` em runtime fica por decidir.
 - Decisões do T-FE-11: a posse verifica-se no cliente com `loadSession()` e, só havendo sessão, `GET /api/profiles/:id` (a resposta privada traz `ownerUserId` e `activeCardToken`, lidos sem Zod para não puxar o Zod para o bundle público); o painel (`public-send-panel`, default export) traz os seus próprios `QueryClientProvider` e `Toaster`, porque a página pública é montada fora dos providers; o import dinâmico de `@/features/*` não é apanhado pela regra `no-restricted-imports` do ESLint (só os estáticos).
 - Decisões do envio de contacto: o seletor só mostra perfis com cartão ativo (`useSendableProfilesQuery`); o remetente da mensagem é o nome do perfil escolhido (coerente com «X partilhou consigo o seu cartão»); o telefone é normalizado com `normalizePhone` (+258 por defeito); o formulário usa `useWatch` (não `form.watch`) para a pré-visualização, por causa da regra do React Compiler no ESLint; a mutação tem `meta: { inlineError: true }` e o erro 429 (com `scope`) aparece no formulário via `errorMessage`; WhatsApp/SMS abrem o link com `window.open(url, '_blank', 'noopener,noreferrer')` **depois** de a API registar o envio.
@@ -145,7 +147,7 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 ### Próxima tarefa, por ordem
 
 1. **Backend (precisa do dono do produto para avançar a sério):** pedir um projeto Supabase e as chaves (URL, anon key) para um `.env` (ver `apps/api/.env.example`), para ligar o `SessionService` ao Supabase Auth e começar o login BFF (T-BE-02). Entretanto, podem avançar-se peças do backend que não dependem do Supabase: `ValidationPipe` global com os schemas Zod partilhados e a estratégia de empacotamento executável (T-BE-03).
-2. **Frontend, em paralelo (não bloqueado):** T-FE-21 dashboard (resumo de visitas/cliques/VCF/contactos e atalhos por papel; `GET /api/analytics/summary`), T-FE-22 estatísticas com gráficos e exportação CSV protegida contra injeção de fórmulas, T-FE-23 temas (ecrã dedicado), T-FE-24 auditoria (tabela filtrável), T-FE-25 conta (dados, palavra-passe, MFA, sessões).
+2. **Frontend, em paralelo (não bloqueado):** T-FE-22 estatísticas (gráficos por período/cartão/empresa e exportação CSV protegida contra injeção de fórmulas; a query `useAnalyticsSummaryQuery` já existe — **carregar o skill `dataviz` antes de desenhar os gráficos**), depois T-FE-23 temas, T-FE-24 auditoria, T-FE-25 conta.
 5. **T-FE-21** Dashboard, **T-FE-22** Estatísticas e CSV, **T-FE-23** Temas (ecrã dedicado), **T-FE-24** Auditoria, **T-FE-25** Conta.
 6. **T-FE-26/27/28** Suite de testes de acessibilidade (axe), Playwright (cinco fluxos, CSP, 360 px) e `scripts/check-bundle-size.mjs`.
 7. Em cada passo: atualizar `docs/codebase-graph.md`, `docs/requirements.md` (estados) e este ficheiro; só marcar Concluída o que cumprir a Definition of Done.

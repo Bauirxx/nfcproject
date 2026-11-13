@@ -9,6 +9,7 @@ import { CardDetailPage } from '@/features/cards/card-detail-page';
 import { CardsPage } from '@/features/cards/cards-page';
 import { CompaniesPage } from '@/features/companies/companies-page';
 import { CompanyFormPage } from '@/features/companies/company-form-page';
+import { DashboardPage } from '@/features/dashboard/dashboard-page';
 import { MembersPage } from '@/features/members/members-page';
 import { SendContactPage } from '@/features/contact-sending/send-contact-page';
 import { ProfileEditorPage } from '@/features/profiles/profile-editor-page';
@@ -56,7 +57,7 @@ export const routes: RouteObject[] = [
           {
             element: <AppShell />,
             children: [
-              { index: true, element: <PlaceholderPage title={navTexts.items.dashboard} /> },
+              { index: true, element: <DashboardPage /> },
               {
                 element: <RequirePermission permission="companies.manage" />,
                 children: [
