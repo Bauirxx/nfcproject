@@ -8,6 +8,12 @@ import { loadEnv } from './config/env';
 
 /** Arranque do backend. A configuração é validada primeiro; cabeçalhos de segurança e CORS fechado (CLAUDE.md, regra 9). */
 async function bootstrap(): Promise<void> {
+  // Carrega o `.env` local (desenvolvimento); em produção a configuração vem do ambiente do processo.
+  try {
+    process.loadEnvFile();
+  } catch {
+    // Sem ficheiro `.env`: usa o ambiente já definido.
+  }
   const env = loadEnv();
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { cors: false });
 

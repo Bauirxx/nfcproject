@@ -5,9 +5,16 @@ import { z } from 'zod';
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  /** URL do projeto Supabase. Obrigatório em produção; vem de um `.env` fora do repositório. */
-  SUPABASE_URL: z.string().url().optional(),
-  /** Chave pública (anon) do Supabase, usada pelo backend ao chamar o Supabase Auth. */
+  /**
+   * URL do projeto Supabase. Obrigatório em produção; vem de um `.env` fora do repositório.
+   * Normalizado para a origem, para tolerar valores colados com caminho (por exemplo `/rest/v1/`).
+   */
+  SUPABASE_URL: z
+    .string()
+    .url()
+    .transform((value) => new URL(value).origin)
+    .optional(),
+  /** Chave pública (anon/publishable) do Supabase, usada pelo backend ao chamar o Supabase Auth. */
   SUPABASE_ANON_KEY: z.string().min(1).optional(),
 });
 

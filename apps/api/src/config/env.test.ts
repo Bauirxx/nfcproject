@@ -13,6 +13,11 @@ describe('loadEnv', () => {
     expect(env.SUPABASE_URL).toBe('https://proj.supabase.co');
   });
 
+  it('normaliza o URL do Supabase para a origem (tolera caminho colado)', () => {
+    const env = loadEnv({ SUPABASE_URL: 'https://proj.supabase.co/rest/v1/', SUPABASE_ANON_KEY: 'chave' });
+    expect(env.SUPABASE_URL).toBe('https://proj.supabase.co');
+  });
+
   it('recusa valores inválidos', () => {
     expect(() => loadEnv({ NODE_ENV: 'staging' })).toThrow(/ambiente inválida/);
     expect(() => loadEnv({ PORT: '0' })).toThrow(/ambiente inválida/);

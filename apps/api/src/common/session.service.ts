@@ -1,13 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { Request } from 'express';
+import { SupabaseAuthService } from '../supabase/supabase-auth.service';
+import type { SessionUser } from './session-user';
 
-/** Utilizador da sessão. O papel fica como `string` até o contrato partilhado ser ligado ao backend. */
-export interface SessionUser {
-  id: string;
-  email: string;
-  role: string;
-  companyId: string | null;
-}
+export type { SessionUser } from './session-user';
 
 /** Cookie HttpOnly com o access token (CLAUDE.md, regra 1). */
 export const ACCESS_TOKEN_COOKIE = 'nfc_access';
@@ -25,18 +21,12 @@ export function readCookie(header: string | undefined, name: string): string | n
 
 @Injectable()
 export class SessionService {
+  constructor(private readonly supabaseAuth: SupabaseAuthService) {}
+
   /** Utilizador da sessão a partir do pedido, ou `null` se não houver sessão válida. */
   async getUser(request: Request): Promise<SessionUser | null> {
     const token = readCookie(request.headers.cookie, ACCESS_TOKEN_COOKIE);
     if (!token) return null;
-    return this.verifyAccessToken(token);
-  }
-
-  /**
-   * Valida o access token contra o Supabase Auth. A ligação ao Supabase é a próxima fase:
-   * sem fornecedor de autenticação configurado, nenhuma sessão é considerada válida.
-   */
-  protected async verifyAccessToken(_token: string): Promise<SessionUser | null> {
-    return null;
+    return this.supabaseAuth.getUser(token);
   }
 }
