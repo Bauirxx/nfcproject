@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { AuthModule } from './auth/auth.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 import { AuthGuard } from './common/auth.guard';
 import { SessionService } from './common/session.service';
@@ -8,7 +9,7 @@ import { HealthModule } from './health/health.module';
 import { SupabaseAuthService } from './supabase/supabase-auth.service';
 
 @Module({
-  imports: [ConfigModule, HealthModule],
+  imports: [ConfigModule, HealthModule, AuthModule],
   providers: [
     SupabaseAuthService,
     SessionService,

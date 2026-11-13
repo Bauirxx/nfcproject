@@ -164,8 +164,10 @@ NestJS 11 com adaptador Express (ADR-0010). Fundação construída; a ligação 
 | `src/common/session-user.ts` | tipo `SessionUser` (partilhado pelo guard, a sessão e o Supabase) | — |
 | `src/common/api-exception.filter.ts` | `ApiExceptionFilter` e `resolveError`: erros em `{ error: { code } }`, sem texto do servidor | `@nestjs/common`, `express` (tipo) |
 | `src/health/health.controller.ts` | `GET /api/health` (`@Public`) → `{ status: 'ok' }` | `@nestjs/common`, `public.decorator` |
+| `src/auth/auth.controller.ts` | `POST /api/auth/login` (Supabase + cookies HttpOnly), `POST /api/auth/logout`, `GET /api/auth/session` | `supabase/supabase-auth.service`, `common/{session.service,cookies,zod-validation.pipe}`, `@nfc-business/shared/schemas` |
+| `src/common/cookies.ts` | `setSessionCookies`/`clearSessionCookies`: access token geral e refresh token restrito a /api/auth | `express` (tipos), `common/session.service` |
 
-Testes (Vitest): `config/env.test.ts`, `common/{auth.guard,api-exception.filter,zod-validation.pipe,session.service}.test.ts`, `supabase/supabase-auth.service.test.ts` (20 testes). O `ZodValidationPipe` já consome os schemas de `@nfc-business/shared` (prova de que o backend usa o contrato partilhado). A ligação ao Supabase, a aplicação do pipe a endpoints reais e o empacotamento executável ficam para os próximos blocos (ADR-0010).
+Testes (Vitest): `config/env.test.ts`, `common/{auth.guard,api-exception.filter,zod-validation.pipe,session.service}.test.ts`, `supabase/supabase-auth.service.test.ts`, `auth/auth.controller.test.ts` (24 testes). O login real precisa de um utilizador criado no Supabase (manual). O `ZodValidationPipe` já consome os schemas de `@nfc-business/shared` (prova de que o backend usa o contrato partilhado). A ligação ao Supabase, a aplicação do pipe a endpoints reais e o empacotamento executável ficam para os próximos blocos (ADR-0010).
 
 ## 4. Endpoints
 
