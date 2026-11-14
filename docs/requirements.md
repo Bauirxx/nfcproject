@@ -135,7 +135,7 @@ Estados das tarefas: Não iniciada, Planeada, Em desenvolvimento, Em revisão, E
 | T-FE-21 | Dashboard | 7 | RF-FE-07 | Planeada |
 | T-FE-22 | Estatísticas e CSV | 7 | RF-FE-18 | Planeada |
 | T-FE-23 | Temas e personalização | 7 | RF-FE-17 | Planeada |
-| T-FE-24 | Auditoria | 7 | RF-FE-19 | Planeada |
+| T-FE-24 | Auditoria | 7 | RF-FE-19 | Concluída |
 | T-FE-25 | Conta | 8 | RF-FE-20 | Planeada |
 | T-FE-26 | Suite de testes de componentes e acessibilidade | 9 | RNF-FE-03, RNF-FE-09 | Planeada |
 | T-FE-27 | Playwright: cinco fluxos, CSP e 360 px | 9 | RNF-FE-01, RNF-FE-06, RNF-FE-09 | Planeada |

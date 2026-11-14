@@ -11,6 +11,7 @@ import { CompaniesPage } from '@/features/companies/companies-page';
 import { CompanyFormPage } from '@/features/companies/company-form-page';
 import { DashboardPage } from '@/features/dashboard/dashboard-page';
 import { StatsPage } from '@/features/analytics/stats-page';
+import { AuditPage } from '@/features/audit/audit-page';
 import { MembersPage } from '@/features/members/members-page';
 import { SendContactPage } from '@/features/contact-sending/send-contact-page';
 import { ProfileEditorPage } from '@/features/profiles/profile-editor-page';
@@ -99,7 +100,7 @@ export const routes: RouteObject[] = [
               },
               {
                 element: <RequirePermission permission="audit.view" />,
-                children: [{ path: 'auditoria', element: <PlaceholderPage title={navTexts.items.audit} /> }],
+                children: [{ path: 'auditoria', element: <AuditPage /> }],
               },
               { path: 'conta', element: <PlaceholderPage title={navTexts.items.account} /> },
               { path: '*', element: <NotFoundPage /> },
