@@ -26,7 +26,7 @@ Estados das tarefas: Não iniciada, Planeada, Em desenvolvimento, Em revisão, E
 | RF-FE-14 | Enviar contacto: formulário curto, canais Email, WhatsApp e SMS, pré-visualização | contact-sending | FRONTEND «Enviar contacto»; CLAUDE «Módulo de envio» | T-FE-17 | `SendContactForm.test.tsx`, `message.test.ts`, e2e `05-send-contact` |
 | RF-FE-15 | Histórico de envios com destinatário mascarado e mensagens de limite | contact-sending | FRONTEND «Enviar contacto»; CLAUDE regra 5 | T-FE-18 | `ContactHistory.test.tsx`, e2e `05-send-contact` |
 | RF-FE-16 | Botão «Enviar o meu contacto» na página pública só para o dono com sessão | public-card, contact-sending | FRONTEND «Página pública»; CLAUDE «Módulo de envio» | T-FE-11 | `PublicCardPage.test.tsx` |
-| RF-FE-17 | Temas: modelos, cores com verificação de contraste, logótipo, pré-visualização | themes | FRONTEND «Temas» | T-FE-23 | `ThemeEditor.test.tsx`, `contrast.test.ts` |
+| RF-FE-17 | Temas: modelos, cores com verificação de contraste, logótipo, pré-visualização | themes | FRONTEND «Temas» | T-FE-23 | `theme-editor.test.tsx`, `themes-page.test.tsx`, `contrast.test.ts` |
 | RF-FE-18 | Estatísticas: gráficos por período, cartão e empresa; exportação CSV | analytics | FRONTEND «Estatísticas» | T-FE-22 | `AnalyticsPage.test.tsx`, `csv.test.ts` |
 | RF-FE-19 | Auditoria: tabela filtrável (administradores) | audit | FRONTEND «Auditoria» | T-FE-24 | `AuditPage.test.tsx` |
 | RF-FE-20 | Conta: dados pessoais, password, MFA, sessões ativas e terminar todas | auth | FRONTEND «Conta» | T-FE-25 | `account-page.test.tsx` |
@@ -134,7 +134,7 @@ Estados das tarefas: Não iniciada, Planeada, Em desenvolvimento, Em revisão, E
 | T-FE-20 | Membros | 6 | RF-FE-09 | Planeada |
 | T-FE-21 | Dashboard | 7 | RF-FE-07 | Planeada |
 | T-FE-22 | Estatísticas e CSV | 7 | RF-FE-18 | Planeada |
-| T-FE-23 | Temas e personalização | 7 | RF-FE-17 | Planeada |
+| T-FE-23 | Temas e personalização | 7 | RF-FE-17 | Concluída |
 | T-FE-24 | Auditoria | 7 | RF-FE-19 | Concluída |
 | T-FE-25 | Conta | 8 | RF-FE-20 | Concluída |
 | T-FE-26 | Suite de testes de componentes e acessibilidade | 9 | RNF-FE-03, RNF-FE-09 | Planeada |

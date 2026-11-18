@@ -12,19 +12,17 @@ import { CompaniesPage } from '@/features/companies/companies-page';
 import { CompanyFormPage } from '@/features/companies/company-form-page';
 import { DashboardPage } from '@/features/dashboard/dashboard-page';
 import { StatsPage } from '@/features/analytics/stats-page';
+import { ThemesPage } from '@/features/themes/themes-page';
 import { AuditPage } from '@/features/audit/audit-page';
 import { MembersPage } from '@/features/members/members-page';
 import { SendContactPage } from '@/features/contact-sending/send-contact-page';
 import { ProfileEditorPage } from '@/features/profiles/profile-editor-page';
 import { ProfilesPage } from '@/features/profiles/profiles-page';
-import { navTexts } from '@/shared/i18n/panel/nav';
 import { AppShell } from './app-shell';
 import { ForbiddenPage, NotFoundPage, ServerErrorPage, SessionExpiredPage } from './error-pages';
 import { RequireAuth, RequireGuest, RequirePermission } from './guards';
-import { PlaceholderPage } from './placeholder-page';
 
 // Rotas como objetos para que os testes possam usar `createMemoryRouter(routes)`.
-// Os elementos das áreas internas são provisórios (PlaceholderPage) até às tarefas T-FE-06 em diante.
 export const routes: RouteObject[] = [
   {
     path: '/',
@@ -93,7 +91,7 @@ export const routes: RouteObject[] = [
               },
               {
                 element: <RequirePermission permission="themes.manage" />,
-                children: [{ path: 'temas', element: <PlaceholderPage title={navTexts.items.themes} /> }],
+                children: [{ path: 'temas', element: <ThemesPage /> }],
               },
               {
                 element: <RequirePermission permission="analytics.view" />,
