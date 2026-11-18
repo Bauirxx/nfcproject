@@ -8,6 +8,13 @@ Migrações do schema `app` do NFC Business (CLAUDE.md, regra 3). São SQL simpl
 2. Cole o conteúdo de `migrations/0001_foundation.sql` e clique em **Run**.
 3. Confirme em **Table Editor** (schema `app`) que apareceram as tabelas `companies`, `users`, `profiles`, `cards` e a vista `public_profiles`.
 4. Em **Project Settings → API → Exposed schemas**, confirme que o schema `app` **não** está exposto (só `public`). As tabelas de negócio ficam fora da Data API.
+5. **Ligação do backend (ADR-0013):**
+   - No SQL Editor, corra `alter role app_backend with login nobypassrls password '<password longa, só letras e números>';`.
+   - Em **Connect → Direct → Session pooler**, copie o URL. Troque `postgres.` por `app_backend.` e ponha a password. Guarde-o como `DATABASE_URL` no `apps/api/.env` e nas variáveis do Render.
+   - Em **Database → Settings → SSL configuration**, ative **Enforce SSL**. O certificado (**Download certificate**) já está em `apps/api/certs/supabase-ca.crt`.
+   - Para verificar: `DB_INTEGRATION=1 pnpm --filter @nfc-business/api test`.
+
+Estado em 2026-11-18: a migração 0001 está aplicada e a ligação com o `app_backend` foi verificada (TLS com a CA, sem BYPASSRLS, RLS a bloquear escritas).
 
 ## O que já está aqui
 
@@ -19,7 +26,7 @@ Migrações do schema `app` do NFC Business (CLAUDE.md, regra 3). São SQL simpl
 ## O que falta (próximas migrações / trabalho em casa)
 
 - `migrations/0002_*`: tabelas `contact_shares`, `analytics_events`, `audit_logs` (mesmo padrão de RLS).
-- Backend: ligação direta ao Postgres com o papel `app_backend`, a definir `app.company_id` / `app.user_id` / `app.is_platform_admin` por pedido (via `set_config(..., true)` numa transação), e os módulos de endpoints (empresas, membros, cartões, perfis, envio, estatísticas, auditoria, público) sobre o contrato do ADR-0004.
+- Backend: ~~ligação direta ao Postgres com o papel `app_backend`~~ (feito: `apps/api/src/database/database.service.ts`, ADR-0013), e os módulos de endpoints (empresas, membros, cartões, perfis, envio, estatísticas, auditoria, público) sobre o contrato do ADR-0004.
 - Migrar o papel/empresa do `app_metadata` do Supabase Auth (interim, ADR-0011) para a tabela `app.users`.
 
 > Nota: estes ficheiros são a fundação; aplique-os ao seu projeto e verifique no SQL Editor. A chave **service_role** só será usada para correr migrações no CI (regra 3), nunca na aplicação em execução.

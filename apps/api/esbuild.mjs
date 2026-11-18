@@ -22,6 +22,8 @@ await build({
     'class-validator',
     'cache-manager',
     '@fastify/static',
+    // Ligação nativa opcional do `pg` (usamos a implementação em JavaScript).
+    'pg-native',
   ],
 });
 

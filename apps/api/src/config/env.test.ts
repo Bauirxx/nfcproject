@@ -24,10 +24,18 @@ describe('loadEnv', () => {
     expect(() => loadEnv({ SUPABASE_URL: 'não-é-url' })).toThrow(/ambiente inválida/);
   });
 
-  it('exige o Supabase em produção', () => {
+  it('exige o Supabase e a base de dados em produção', () => {
+    const supabase = { SUPABASE_URL: 'https://proj.supabase.co', SUPABASE_ANON_KEY: 'chave' };
     expect(() => loadEnv({ NODE_ENV: 'production' })).toThrow(/produção/);
+    expect(() => loadEnv({ NODE_ENV: 'production', ...supabase })).toThrow(/DATABASE_URL/);
     expect(
-      loadEnv({ NODE_ENV: 'production', SUPABASE_URL: 'https://proj.supabase.co', SUPABASE_ANON_KEY: 'chave' }).NODE_ENV,
+      loadEnv({ NODE_ENV: 'production', ...supabase, DATABASE_URL: 'postgresql://app_backend.x:p@host:5432/postgres' })
+        .NODE_ENV,
     ).toBe('production');
+  });
+
+  it('só aceita URLs PostgreSQL na base de dados', () => {
+    expect(() => loadEnv({ DATABASE_URL: 'https://host/db' })).toThrow(/DATABASE_URL/);
+    expect(loadEnv({ DATABASE_URL: 'postgres://u:p@host:5432/db' }).DATABASE_POOL_MAX).toBe(5);
   });
 });

@@ -15,6 +15,7 @@ por isso para o browser tudo é a mesma origem e os cookies de sessão funcionam
 3. Nas **Environment Variables** do serviço, preencha (como no `.env` local; a chave é a anon/publishable):
    - `SUPABASE_URL` = o URL do projeto Supabase (só o endereço, sem `/rest/v1/`).
    - `SUPABASE_ANON_KEY` = a chave anon/publishable.
+   - `DATABASE_URL` = a mesma linha do `apps/api/.env`: o Session pooler com o utilizador `app_backend.<ref>` (ADR-0013). Nunca use a password do `postgres`.
    - (`NODE_ENV=production`, `NODE_VERSION=24.22.2` já vêm do `render.yaml`.)
 4. **Deploy**. Quando terminar, o Render dá um URL, por exemplo `https://nfc-business-api.onrender.com`.
 5. Confirme: abra `https://…onrender.com/api/health` → deve mostrar `{"status":"ok"}`.

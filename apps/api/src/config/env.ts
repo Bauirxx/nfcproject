@@ -16,6 +16,17 @@ export const envSchema = z.object({
     .optional(),
   /** Chave pública (anon/publishable) do Supabase, usada pelo backend ao chamar o Supabase Auth. */
   SUPABASE_ANON_KEY: z.string().min(1).optional(),
+  /**
+   * Ligação PostgreSQL com o papel `app_backend` (sem BYPASSRLS), pelo Session pooler do Supabase (ADR-0013).
+   * Segredo: só no `.env` local ou nas variáveis do Render.
+   */
+  DATABASE_URL: z
+    .string()
+    .url()
+    .refine((value) => /^postgres(ql)?:\/\//.test(value), 'postgres_url')
+    .optional(),
+  /** Máximo de ligações do pool; o pooler do Supabase também limita. */
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -28,8 +39,10 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Configuração de ambiente inválida: ${fields}.`);
   }
   const env = result.data;
-  if (env.NODE_ENV === 'production' && (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY)) {
-    throw new Error('Configuração de ambiente inválida: SUPABASE_URL e SUPABASE_ANON_KEY são obrigatórios em produção.');
+  if (env.NODE_ENV === 'production' && (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.DATABASE_URL)) {
+    throw new Error(
+      'Configuração de ambiente inválida: SUPABASE_URL, SUPABASE_ANON_KEY e DATABASE_URL são obrigatórios em produção.',
+    );
   }
   return env;
 }

@@ -20,3 +20,6 @@ services:
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
+      # Session pooler com o papel app_backend (ADR-0013). Segredo: definido só no painel do Render.
+      - key: DATABASE_URL
+        sync: false
