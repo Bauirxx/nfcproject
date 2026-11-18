@@ -29,7 +29,7 @@ Estados das tarefas: Não iniciada, Planeada, Em desenvolvimento, Em revisão, E
 | RF-FE-17 | Temas: modelos, cores com verificação de contraste, logótipo, pré-visualização | themes | FRONTEND «Temas» | T-FE-23 | `ThemeEditor.test.tsx`, `contrast.test.ts` |
 | RF-FE-18 | Estatísticas: gráficos por período, cartão e empresa; exportação CSV | analytics | FRONTEND «Estatísticas» | T-FE-22 | `AnalyticsPage.test.tsx`, `csv.test.ts` |
 | RF-FE-19 | Auditoria: tabela filtrável (administradores) | audit | FRONTEND «Auditoria» | T-FE-24 | `AuditPage.test.tsx` |
-| RF-FE-20 | Conta: dados pessoais, password, MFA, sessões ativas e terminar todas | auth | FRONTEND «Conta» | T-FE-25 | `AccountPage.test.tsx` |
+| RF-FE-20 | Conta: dados pessoais, password, MFA, sessões ativas e terminar todas | auth | FRONTEND «Conta» | T-FE-25 | `account-page.test.tsx` |
 | RF-FE-21 | Páginas 403, 404, 500 e sessão expirada | app | FRONTEND «Páginas de erro» | T-FE-05 | `ErrorPages.test.tsx` |
 | RF-FE-22 | Menu e ações por papel; tratamento central de 401, 403 e 429 | app, shared | FRONTEND «Permissões na interface» | T-FE-03, T-FE-05 | `client.test.ts`, `permissions.test.ts`, `AppLayout.test.tsx` |
 
@@ -136,7 +136,7 @@ Estados das tarefas: Não iniciada, Planeada, Em desenvolvimento, Em revisão, E
 | T-FE-22 | Estatísticas e CSV | 7 | RF-FE-18 | Planeada |
 | T-FE-23 | Temas e personalização | 7 | RF-FE-17 | Planeada |
 | T-FE-24 | Auditoria | 7 | RF-FE-19 | Concluída |
-| T-FE-25 | Conta | 8 | RF-FE-20 | Planeada |
+| T-FE-25 | Conta | 8 | RF-FE-20 | Concluída |
 | T-FE-26 | Suite de testes de componentes e acessibilidade | 9 | RNF-FE-03, RNF-FE-09 | Planeada |
 | T-FE-27 | Playwright: cinco fluxos, CSP e 360 px | 9 | RNF-FE-01, RNF-FE-06, RNF-FE-09 | Planeada |
 | T-FE-28 | Verificação do orçamento de JavaScript | 9 | RNF-FE-02 | Planeada |

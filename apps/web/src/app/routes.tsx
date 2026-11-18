@@ -1,4 +1,5 @@
 import { Navigate, type RouteObject } from 'react-router';
+import { AccountPage } from '@/features/account/account-page';
 import { AcceptInvitePage } from '@/features/auth/accept-invite-page';
 import { LoginPage } from '@/features/auth/login-page';
 import { MfaSetupPage } from '@/features/auth/mfa-setup-page';
@@ -102,7 +103,7 @@ export const routes: RouteObject[] = [
                 element: <RequirePermission permission="audit.view" />,
                 children: [{ path: 'auditoria', element: <AuditPage /> }],
               },
-              { path: 'conta', element: <PlaceholderPage title={navTexts.items.account} /> },
+              { path: 'conta', element: <AccountPage /> },
               { path: '*', element: <NotFoundPage /> },
             ],
           },
