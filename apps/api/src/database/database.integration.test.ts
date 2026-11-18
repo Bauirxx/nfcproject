@@ -55,6 +55,56 @@ describe.runIf(enabled)('DatabaseService (base de dados real)', () => {
     );
   });
 
+  // Migração 0002.
+  it('cria as tabelas novas com RLS e as políticas só para o app_backend', async () => {
+    const rows = await service.withoutContext(async (db) => {
+      const tables = await db.query<{ relname: string; relrowsecurity: boolean }>(
+        `select c.relname, c.relrowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace
+          where n.nspname = 'app' and c.relkind = 'r' order by 1`,
+      );
+      const policies = await db.query<{ policyname: string; roles: string[] }>(
+        `select policyname, roles::text[] as roles from pg_policies where schemaname = 'app'`,
+      );
+      return { tables: tables.rows, policies: policies.rows };
+    });
+    expect(rows.tables.map((t) => t.relname)).toEqual(
+      expect.arrayContaining(['analytics_events', 'audit_logs', 'contact_shares', 'email_suppressions']),
+    );
+    expect(rows.tables.every((t) => t.relrowsecurity)).toBe(true);
+    expect(rows.policies.length).toBeGreaterThan(0);
+    expect(rows.policies.every((p) => p.roles.length === 1 && p.roles[0] === 'app_backend')).toBe(true);
+  });
+
+  it('audit_logs é append-only para o app_backend', async () => {
+    await expect(
+      service.withContext({ companyId: null, isPlatformAdmin: true }, (db) =>
+        db.query(`update app.audit_logs set target = 'x' where false`),
+      ),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      service.withContext({ companyId: null, isPlatformAdmin: true }, (db) =>
+        db.query(`delete from app.audit_logs where false`),
+      ),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it('a vista public_cards lê-se sem contexto e não aceita escrita', async () => {
+    const count = await service.withoutContext(async (db) => {
+      const result = await db.query<{ n: number }>('select count(*)::int as n from app.public_cards');
+      return result.rows[0]?.n;
+    });
+    expect(typeof count).toBe('number');
+    await expect(
+      service.withoutContext((db) => db.query(`delete from app.public_cards where false`)),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it('o app_backend não pode correr a anonimização (só o pg_cron)', async () => {
+    await expect(
+      service.withoutContext((db) => db.query('select app.anonymize_old_contact_shares()')),
+    ).rejects.toThrow(/permission denied/);
+  });
+
   it('fecha o pool', async () => {
     await service.onModuleDestroy();
   });
