@@ -4,6 +4,7 @@ import type { Request, Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
 import type { AuditService } from '../audit/audit.service';
 import { CsrfService } from '../common/csrf';
+import type { DatabaseService } from '../database/database.service';
 import type { SessionService, SessionUser } from '../common/session.service';
 import type { AuthIdentity, ResolvedSession } from '../common/session-user';
 import { loadEnv } from '../config/env';
@@ -62,7 +63,7 @@ function controllerWith(options: {
   } as unknown as SessionService;
   const csrf = new CsrfService(env);
   const audit = { record: vi.fn(async () => undefined) } as unknown as AuditService;
-  return { controller: new AuthController(supabase, sessions, csrf, audit, env), csrf, audit, supabase };
+  return { controller: new AuthController(supabase, sessions, csrf, audit, { configured: false } as unknown as DatabaseService, env), csrf, audit, supabase };
 }
 
 describe('AuthController', () => {
@@ -163,6 +164,7 @@ describe('AuthController', () => {
       { accessToken: () => null } as unknown as SessionService,
       new CsrfService(withOrigin),
       { record: vi.fn(async () => undefined) } as unknown as AuditService,
+      { configured: false } as unknown as DatabaseService,
       withOrigin,
     );
     await expect(controller.recover({ email: 'ninguem@exemplo.test' }, req(), fakeRes())).resolves.toBeUndefined();

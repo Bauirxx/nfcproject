@@ -25,6 +25,12 @@ export const envSchema = z.object({
     .url()
     .refine((value) => /^postgres(ql)?:\/\//.test(value), 'postgres_url')
     .optional(),
+  /**
+   * Chave service_role do Supabase, usada APENAS pelo `SupabaseAdminService` (convites, membros e Storage),
+   * exceção isolada à regra 3 decidida no ADR-0017. Segredo: só no `.env` local e nas variáveis do Render.
+   * Sem ela, convites e uploads respondem 503.
+   */
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(20, 'too_short').optional(),
   /** Máximo de ligações do pool; o pooler do Supabase também limita. */
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
   /**

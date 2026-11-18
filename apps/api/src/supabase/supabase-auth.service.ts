@@ -159,6 +159,21 @@ export class SupabaseAuthService {
     return mapSupabaseUser(data.user);
   }
 
+  /**
+   * Aceita um convite: valida o token de uso único do email de convite, define o nome e a palavra-passe e fecha
+   * a sessão criada (o utilizador entra depois pelo login, como na API simulada). `null` se o token não servir.
+   */
+  async acceptInvite(tokenHash: string, name: string, password: string): Promise<AuthIdentity | null> {
+    const client = this.isolatedClient();
+    if (!client) return null;
+    const { data, error } = await client.auth.verifyOtp({ token_hash: tokenHash, type: 'invite' });
+    if (error || !data.session || !data.user) return null;
+    const updated = await client.auth.updateUser({ password, data: { name } });
+    await client.auth.signOut({ scope: 'local' });
+    if (updated.error || !updated.data.user) return null;
+    return mapSupabaseUser(updated.data.user);
+  }
+
   /** Muda o nome (user_metadata.name) do próprio utilizador. */
   async updateName(tokens: SessionTokens, name: string): Promise<boolean> {
     const session = await this.userClient(tokens);

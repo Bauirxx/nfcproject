@@ -49,10 +49,17 @@ O backend pede o email ao Supabase. O link tem de abrir a página `/definir-pass
 
 O envio de emails do Supabase tem um limite baixo de mensagens por hora. Para produção, configure um SMTP próprio (Resend), o mesmo que o envio de contacto vai usar.
 
+## 5. Supabase: convites (ADR-0017)
+
+1. Em **Project Settings → API Keys**, copie a chave **service_role** (ou "secret"). Ponha-a **só** em `SUPABASE_SERVICE_ROLE_KEY`, no `apps/api/.env` e nas variáveis do Render. Nunca a ponha no chat, no Git nem no Vercel.
+2. **Authentication → URL Configuration → Redirect URLs**: acrescente `https://nfcproject-zeta.vercel.app/convite`.
+3. **Authentication → Emails → Invite user**: troque o link do modelo por
+   `<a href="{{ .RedirectTo }}?token={{ .TokenHash }}">Aceitar o convite</a>`.
+
 ## Notas
 
 - As chaves do Supabase ficam só nos painéis do Render e do Vercel (e no `.env` local), nunca no repositório.
-- A chave **service_role** continua fora de tudo isto; só servirá para migrações no CI (CLAUDE.md, regra 3).
+- A chave **service_role** só existe no Render e no `.env` local, e só o `SupabaseAdminService` a usa (exceção isolada à regra 3, ADR-0017).
 - O backend é empacotado num único ficheiro (`apps/api/dist/server.cjs`) por esbuild (ver ADR-0012), por isso o
   arranque no Render é só `node apps/api/dist/server.cjs`.
 - O plano gratuito do Render adormece o serviço quando está sem uso; o primeiro pedido depois disso é mais lento.

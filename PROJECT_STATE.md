@@ -88,7 +88,7 @@ Nenhum.
 
 ## Decisões
 
-Ver `docs/adr/` (0001 a 0016). A estratégia de testes e a API simulada estão no ADR-0009; os códigos de erro da API simulada a confirmar pelo backend estão no complemento do ADR-0004.
+Ver `docs/adr/` (0001 a 0017). A estratégia de testes e a API simulada estão no ADR-0009; os códigos de erro da API simulada a confirmar pelo backend estão no complemento do ADR-0004.
 
 Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
@@ -97,6 +97,14 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 - O tema é um store ao nível do módulo (`app/theme.ts`) sobre a única leitura de `localStorage` permitida (`shared/lib/theme-preference.ts`); o modo escuro é a classe `dark` em `<html>`.
 
 ## Alterações recentes
+
+- 2026-11-18: **Convites, empresas e membros no backend real (ADR-0017: service_role isolada, decisão do dono).**
+  - `SupabaseAdminService` é o único com a chave e só faz `invite`, `setRole` e `deleteUser`.
+  - `POST /api/companies` cria a empresa e convida o primeiro administrador na mesma transação.
+  - `GET`/`POST`/`PATCH`/`DELETE /api/members`: convite, mudança de papel e remoção; o próprio é protegido.
+  - `POST /api/auth/invite/accept`: `verifyOtp` do convite, password vazada recusada, conta ativada em `app.users`.
+  - Testes: 96 unitários.
+  - **Falta o dono:** pôr `SUPABASE_SERVICE_ROLE_KEY` no `.env` e no Render, acrescentar o Redirect URL `/convite` e mudar o modelo do email de convite (`docs/deploy.md`, secção 5).
 
 - 2026-11-18: **Recuperação da palavra-passe no backend real.** `POST /api/auth/recover` responde sempre 202 e tem 5/min por IP e por email; `POST /api/auth/recover/confirm` usa `verifyOtp` com o token_hash (uso único, 1 h), recusa passwords vazadas antes de consumir o token, termina todas as sessões e audita. **Falta a configuração no Supabase pelo dono** (Site URL, Redirect URL e modelo do email, ver `docs/deploy.md` secção 4). Testes: 90 unitários.
 

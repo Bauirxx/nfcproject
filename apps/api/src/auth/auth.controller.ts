@@ -12,9 +12,11 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import {
+  inviteAcceptRequestSchema,
   loginRequestSchema,
   recoverConfirmRequestSchema,
   recoverRequestSchema,
+  type InviteAcceptRequest,
   type LoginRequest,
   type RecoverConfirmRequest,
   type RecoverRequest,
@@ -30,6 +32,7 @@ import { Public } from '../common/public.decorator';
 import { readCookie, SessionService } from '../common/session.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { ENV, type Env } from '../config/env';
+import { DatabaseService } from '../database/database.service';
 import { readAal, SupabaseAuthService } from '../supabase/supabase-auth.service';
 import { AuditService } from '../audit/audit.service';
 import { enforceRateLimit, FixedWindowRateLimiter } from '../common/rate-limiter';
@@ -51,6 +54,7 @@ export class AuthController {
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject(CsrfService) private readonly csrf: CsrfService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(DatabaseService) private readonly database: DatabaseService,
     @Inject(ENV) env: Env,
   ) {
     this.secure = env.NODE_ENV !== 'development';
@@ -158,6 +162,32 @@ export class AuthController {
       metadata: { via: 'recover' },
     });
     clearSessionCookies(res, this.secure);
+  }
+
+  /**
+   * Aceita o convite (regra 1: só se entra por convite). Recusa palavras-passe vazadas antes de gastar o token,
+   * ativa a conta em `app.users` e não inicia sessão: o utilizador entra pelo login (e configura o MFA se for
+   * administrador).
+   */
+  @Public()
+  @Post('invite/accept')
+  @HttpCode(204)
+  async acceptInvite(
+    @Body(new ZodValidationPipe(inviteAcceptRequestSchema)) body: InviteAcceptRequest,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    enforceRateLimit(this.recoverAttempts, `invite:${clientIp(req)}`, res);
+    if (await isBreachedPassword(body.password)) {
+      throw new UnprocessableEntityException({ error: { code: 'weak_password' } });
+    }
+    const identity = await this.supabaseAuth.acceptInvite(body.token, body.name, body.password);
+    if (!identity) throw new BadRequestException({ error: { code: 'invalid_token' } });
+    if (identity.companyId && this.database.configured) {
+      await this.database.withContext({ companyId: identity.companyId, isPlatformAdmin: false }, (db) =>
+        db.query(`update app.users set name = $2, status = 'active' where id::text = $1`, [identity.id, body.name]),
+      );
+    }
   }
 
   /**

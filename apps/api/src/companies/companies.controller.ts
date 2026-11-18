@@ -4,7 +4,6 @@ import {
   Get,
   Inject,
   NotFoundException,
-  NotImplementedException,
   Param,
   Patch,
   Post,
@@ -12,8 +11,10 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import {
+  companyCreateRequestSchema,
   companyUpdateRequestSchema,
   type Company,
+  type CompanyCreateRequest,
   type CompanyList,
   type CompanyUpdateRequest,
 } from '@nfc-business/shared/schemas';
@@ -23,6 +24,7 @@ import { auditActorOf, dbContextOf, requirePermission } from '../common/access';
 import type { AuthedRequest } from '../common/auth.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { DatabaseService, type Queryable } from '../database/database.service';
+import { MembersService } from '../members/members.service';
 
 /** Marca usada quando a empresa ainda não tem uma guardada (mesma da API simulada). */
 export const DEFAULT_BRAND = { primaryColor: '#1e40af', accentColor: '#0f766e' } as const;
@@ -67,6 +69,7 @@ export class CompaniesController {
   constructor(
     @Inject(DatabaseService) private readonly database: DatabaseService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(MembersService) private readonly members: MembersService,
   ) {}
 
   @Get()
@@ -86,13 +89,32 @@ export class CompaniesController {
   }
 
   /**
-   * Criar empresa convida o primeiro administrador, o que cria uma conta no Supabase Auth. Isso exige a API de
-   * administração (service_role), proibida em runtime pela regra 3: fica à espera de uma decisão (ADR por fazer).
+   * Cria a empresa e convida o primeiro administrador (P-09: o registo é só por convite). Tudo na mesma
+   * transação: se o convite falhar, a empresa não fica criada (ADR-0017).
    */
   @Post()
-  create(@Req() req: AuthedRequest): never {
-    requirePermission(req, 'companies.manage');
-    throw new NotImplementedException({ error: { code: 'invites_unavailable' } });
+  async create(
+    @Body(new ZodValidationPipe(companyCreateRequestSchema)) body: CompanyCreateRequest,
+    @Req() req: AuthedRequest,
+  ): Promise<Company> {
+    const user = requirePermission(req, 'companies.manage');
+    if (body.logoFileId) throw new UnprocessableEntityException({ error: { code: 'invalid_file' } });
+    const company = await this.database.withContext(dbContextOf(user), async (db) => {
+      const inserted = await db.query<{ id: string }>(
+        `insert into app.companies (name, contact_email, brand) values ($1, $2, $3::jsonb) returning id`,
+        [body.name, body.contactEmail, JSON.stringify(body.brand)],
+      );
+      const id = inserted.rows[0]!.id;
+      await this.members.invite(db, body.adminEmail, 'company_admin', id);
+      return this.findOr404(db, id);
+    });
+    await this.audit.record({ action: 'company.created', actor: { ...auditActorOf(user), companyId: company.id }, target: company.name });
+    await this.audit.record({
+      action: 'member.invited',
+      actor: { ...auditActorOf(user), companyId: company.id },
+      target: body.adminEmail,
+    });
+    return company;
   }
 
   @Patch(':id')

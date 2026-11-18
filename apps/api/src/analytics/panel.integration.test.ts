@@ -8,6 +8,7 @@ import { loadEnv } from '../config/env';
 import { DatabaseService } from '../database/database.service';
 import { AuditController } from '../audit/audit.controller';
 import { CompaniesController } from '../companies/companies.controller';
+import type { MembersService } from '../members/members.service';
 import type { AuditService } from '../audit/audit.service';
 import { AnalyticsService, REPORT_TIME_ZONE } from './analytics.service';
 
@@ -30,7 +31,11 @@ describe.runIf(enabled)('Painel (base de dados real)', () => {
   const database = new DatabaseService(loadEnv({ ...process.env, NODE_ENV: 'test' }));
   const analytics = new AnalyticsService(database);
   const audit = new AuditController(database);
-  const companies = new CompaniesController(database, { record: async () => undefined } as unknown as AuditService);
+  const companies = new CompaniesController(
+    database,
+    { record: async () => undefined } as unknown as AuditService,
+    {} as unknown as MembersService,
+  );
   const admin = { companyId: null, isPlatformAdmin: true };
   let today = '';
 
