@@ -31,6 +31,10 @@ export const envSchema = z.object({
    * Sem ela, convites e uploads respondem 503.
    */
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20, 'too_short').optional(),
+  /** Chave da API do Resend (email transacional do envio de contacto). Sem ela, o canal email responde 503. */
+  RESEND_API_KEY: z.string().min(10, 'too_short').optional(),
+  /** Remetente dos emails, por exemplo `NFC Business <contacto@o-seu-dominio>` (domínio com SPF, DKIM e DMARC). */
+  EMAIL_FROM: z.string().min(3).max(200).default('NFC Business <onboarding@resend.dev>'),
   /** Máximo de ligações do pool; o pooler do Supabase também limita. */
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
   /**

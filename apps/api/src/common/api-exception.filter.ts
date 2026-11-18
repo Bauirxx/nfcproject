@@ -22,12 +22,33 @@ function extractCode(body: unknown): string | null {
   return typeof code === 'string' ? code : null;
 }
 
+const RATE_LIMIT_SCOPES = new Set(['hour', 'day', 'company']);
+
+/** Detalhes permitidos no corpo do erro: só o `scope` dos limites de envio (ADR-0004). */
+function extractScope(body: unknown): string | null {
+  const error = typeof body === 'object' && body !== null ? (body as { error?: { scope?: unknown } }).error : undefined;
+  return typeof error?.scope === 'string' && RATE_LIMIT_SCOPES.has(error.scope) ? error.scope : null;
+}
+
+function extractRetryAfter(body: unknown): number | null {
+  const value = typeof body === 'object' && body !== null ? (body as { retryAfter?: unknown }).retryAfter : undefined;
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.ceil(value) : null;
+}
+
 /** Estado e código estável de uma exceção. Nunca expõe texto do servidor (CLAUDE.md, regra 9). */
-export function resolveError(exception: unknown): { status: number; code: string } {
+export function resolveError(exception: unknown): {
+  status: number;
+  code: string;
+  scope?: string;
+  retryAfter?: number;
+} {
   if (exception instanceof HttpException) {
     const status = exception.getStatus();
-    const code = extractCode(exception.getResponse()) ?? CODE_BY_STATUS[status] ?? 'error';
-    return { status, code };
+    const body = exception.getResponse();
+    const code = extractCode(body) ?? CODE_BY_STATUS[status] ?? 'error';
+    const scope = extractScope(body);
+    const retryAfter = extractRetryAfter(body);
+    return { status, code, ...(scope ? { scope } : {}), ...(retryAfter ? { retryAfter } : {}) };
   }
   return { status: HttpStatus.INTERNAL_SERVER_ERROR, code: 'internal_error' };
 }
@@ -39,10 +60,11 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
-    const { status, code } = resolveError(exception);
+    const { status, code, scope, retryAfter } = resolveError(exception);
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(exception instanceof Error ? (exception.stack ?? exception.message) : String(exception));
     }
-    response.status(status).json({ error: { code } });
+    if (retryAfter) response.setHeader('Retry-After', String(retryAfter));
+    response.status(status).json({ error: scope ? { code, scope } : { code } });
   }
 }

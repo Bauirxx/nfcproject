@@ -56,6 +56,14 @@ O envio de emails do Supabase tem um limite baixo de mensagens por hora. Para pr
 3. **Authentication → Emails → Invite user**: troque o link do modelo por
    `<a href="{{ .RedirectTo }}?token={{ .TokenHash }}">Aceitar o convite</a>`.
 
+## 6. Envio de contacto por email (ADR-0019)
+
+1. Aplique `supabase/migrations/0004_contact_shares_sender.sql` no SQL Editor.
+2. Crie uma conta em resend.com. Em **API Keys**, crie uma chave e ponha-a em `RESEND_API_KEY`, no `apps/api/.env` e no Render.
+3. Para testes, o remetente por defeito (`onboarding@resend.dev`) só entrega no email da conta Resend. Para produção:
+   - verifique um domínio no Resend (SPF, DKIM e DMARC);
+   - defina `EMAIL_FROM`, por exemplo `NFC Business <contacto@o-seu-dominio>`.
+
 ## Notas
 
 - As chaves do Supabase ficam só nos painéis do Render e do Vercel (e no `.env` local), nunca no repositório.

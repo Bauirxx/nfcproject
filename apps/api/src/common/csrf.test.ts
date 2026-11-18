@@ -1,6 +1,7 @@
 import { ForbiddenException, type ExecutionContext } from '@nestjs/common';
 import type { Request } from 'express';
 import { describe, expect, it } from 'vitest';
+import type { Reflector } from '@nestjs/core';
 import { loadEnv } from '../config/env';
 import { CsrfGuard, CsrfService } from './csrf';
 
@@ -11,12 +12,18 @@ function request(method: string, headers: Record<string, string> = {}): Request 
 }
 
 function context(req: Request): ExecutionContext {
-  return { switchToHttp: () => ({ getRequest: () => req }) } as unknown as ExecutionContext;
+  return {
+    switchToHttp: () => ({ getRequest: () => req }),
+    getHandler: () => () => undefined,
+    getClass: () => class {},
+  } as unknown as ExecutionContext;
 }
+
+const reflector = (skip = false) => ({ getAllAndOverride: () => skip }) as unknown as Reflector;
 
 function setup(publicUrl?: string) {
   const service = new CsrfService(loadEnv({ IP_HASH_SECRET: 's'.repeat(32), PUBLIC_APP_URL: publicUrl }));
-  return { service, guard: new CsrfGuard(service) };
+  return { service, guard: new CsrfGuard(service, reflector()) };
 }
 
 describe('CsrfService', () => {
@@ -66,6 +73,12 @@ describe('CsrfGuard', () => {
       expect(error).toBeInstanceOf(ForbiddenException);
       expect((error as ForbiddenException).getResponse()).toEqual({ error: { code } });
     }
+  });
+
+  it('rotas @SkipCsrf (autorizadas por código assinado) passam sem token', () => {
+    const service = new CsrfService(loadEnv({ IP_HASH_SECRET: 's'.repeat(32), PUBLIC_APP_URL: ORIGIN }));
+    const guard = new CsrfGuard(service, reflector(true));
+    expect(guard.canActivate(context(request('POST', {})))).toBe(true);
   });
 
   it('sem origem pública configurada (desenvolvimento) só verifica o token', () => {

@@ -26,6 +26,11 @@ services:
       # Convites, membros e Storage: só o SupabaseAdminService a usa (ADR-0017). Segredo: só no painel do Render.
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      # Email do envio de contacto (ADR-0019). Segredo: só no painel do Render.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
       # Hash dos IPs nas estatísticas (ADR-0014): o Render gera um valor aleatório.
       - key: IP_HASH_SECRET
         generateValue: true

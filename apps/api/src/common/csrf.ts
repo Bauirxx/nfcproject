@@ -10,12 +10,21 @@ import {
   Inject,
   Injectable,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { SetMetadata } from '@nestjs/common';
 import type { Request } from 'express';
 import { ENV, type Env } from '../config/env';
 import { developmentIpSecret } from './ip-hash';
 import { ACCESS_TOKEN_COOKIE, readCookie } from './session.service';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+export const SKIP_CSRF_KEY = 'skipCsrf';
+/**
+ * Dispensa o CSRF numa rota que se autoriza por outro meio (um código assinado no próprio pedido), como o
+ * cancelamento de emails em um clique (RFC 8058), que os clientes de email enviam sem cabeçalhos da aplicação.
+ */
+export const SkipCsrf = () => SetMetadata(SKIP_CSRF_KEY, true);
 
 @Injectable()
 export class CsrfService {
@@ -51,11 +60,15 @@ export class CsrfService {
 /** Guard global: aplica-se a todos os pedidos que alteram dados, públicos ou não. */
 @Injectable()
 export class CsrfGuard implements CanActivate {
-  constructor(@Inject(CsrfService) private readonly csrf: CsrfService) {}
+  constructor(
+    @Inject(CsrfService) private readonly csrf: CsrfService,
+    @Inject(Reflector) private readonly reflector: Reflector,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
     if (SAFE_METHODS.has(request.method)) return true;
+    if (this.reflector.getAllAndOverride<boolean>(SKIP_CSRF_KEY, [context.getHandler(), context.getClass()])) return true;
     if (this.csrf.allowedOrigin && request.headers.origin !== this.csrf.allowedOrigin) {
       throw new ForbiddenException({ error: { code: 'origin_invalid' } });
     }
