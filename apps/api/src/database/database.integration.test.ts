@@ -94,9 +94,16 @@ describe.runIf(enabled)('DatabaseService (base de dados real)', () => {
       return result.rows[0]?.n;
     });
     expect(typeof count).toBe('number');
-    await expect(
-      service.withoutContext((db) => db.query(`delete from app.public_cards where false`)),
-    ).rejects.toThrow(/permission denied/);
+    // Um `delete` numa vista com junção falha antes da verificação de privilégios; confirma-se o privilégio.
+    const privileges = await service.withoutContext(async (db) => {
+      const result = await db.query<Record<string, boolean>>(
+        `select has_table_privilege('app.public_cards', 'select') as sel,
+                has_table_privilege('app.public_cards', 'insert,update,delete') as write,
+                has_table_privilege('app.audit_logs', 'update,delete,truncate') as audit_write`,
+      );
+      return result.rows[0];
+    });
+    expect(privileges).toEqual({ sel: true, write: false, audit_write: false });
   });
 
   it('o app_backend não pode correr a anonimização (só o pg_cron)', async () => {

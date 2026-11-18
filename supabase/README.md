@@ -30,7 +30,7 @@ Estado em 2026-11-18: a migração 0001 está aplicada e a ligação com o `app_
 
 ## O que falta (próximas migrações / trabalho em casa)
 
-- ~~`migrations/0002_*`~~: escrita (`0002_sharing_analytics_audit.sql`); falta aplicá-la no Supabase.
+- ~~`migrations/0002_*`~~: aplicada e verificada a 2026-11-18 (9 testes de integração).
 - Backend: ~~ligação direta ao Postgres com o papel `app_backend`~~ (feito: `apps/api/src/database/database.service.ts`, ADR-0013), e os módulos de endpoints (empresas, membros, cartões, perfis, envio, estatísticas, auditoria, público) sobre o contrato do ADR-0004.
 - Migrar o papel/empresa do `app_metadata` do Supabase Auth (interim, ADR-0011) para a tabela `app.users`.
 
