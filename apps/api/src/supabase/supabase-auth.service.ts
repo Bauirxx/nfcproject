@@ -121,6 +121,30 @@ export class SupabaseAuthService {
     }
   }
 
+  /** Muda o nome (user_metadata.name) do próprio utilizador. */
+  async updateName(tokens: SessionTokens, name: string): Promise<boolean> {
+    const session = await this.userClient(tokens);
+    if (!session) return false;
+    const { error } = await session.client.auth.updateUser({ data: { name } });
+    return !error;
+  }
+
+  /** Muda a palavra-passe do próprio utilizador (a atual já foi confirmada por `checkPassword`). */
+  async updatePassword(tokens: SessionTokens, password: string): Promise<boolean> {
+    const session = await this.userClient(tokens);
+    if (!session) return false;
+    const { error } = await session.client.auth.updateUser({ password });
+    return !error;
+  }
+
+  /** Revoga todas as sessões do utilizador, incluindo a atual (refresh tokens deixam de servir). */
+  async revokeAll(tokens: SessionTokens): Promise<boolean> {
+    const session = await this.userClient(tokens);
+    if (!session) return false;
+    const { error } = await session.client.auth.signOut({ scope: 'global' });
+    return !error;
+  }
+
   // MFA (TOTP) do Supabase, sempre no contexto da sessão do próprio utilizador (nunca com service_role).
 
   /** Cliente isolado com a sessão do utilizador (tokens dos cookies). Pode renovar os tokens. */
