@@ -2,11 +2,12 @@ import { Module } from '@nestjs/common';
 import { AnalyticsController } from './analytics/analytics.controller';
 import { AnalyticsService } from './analytics/analytics.service';
 import { AuditController } from './audit/audit.controller';
+import { CardsController } from './cards/cards.controller';
 import { CompaniesController } from './companies/companies.controller';
 
-/** Endpoints autenticados do painel (módulos analytics, audit e companies). */
+/** Endpoints autenticados do painel (módulos analytics, audit, cards e companies). */
 @Module({
-  controllers: [AnalyticsController, AuditController, CompaniesController],
+  controllers: [AnalyticsController, AuditController, CardsController, CompaniesController],
   providers: [AnalyticsService],
 })
 export class PanelModule {}

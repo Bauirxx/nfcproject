@@ -9,5 +9,7 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     restoreMocks: true,
     fileParallelism: process.env.DB_INTEGRATION !== '1',
+    // Cada consulta à base de dados real faz uma ida e volta ao pooler: os testes de integração precisam de mais tempo.
+    testTimeout: process.env.DB_INTEGRATION === '1' ? 60_000 : 5_000,
   },
 });
