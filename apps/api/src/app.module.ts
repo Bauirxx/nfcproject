@@ -6,9 +6,10 @@ import { AuthGuard } from './common/auth.guard';
 import { CoreModule } from './common/core.module';
 import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
+import { PublicModule } from './public/public.module';
 
 @Module({
-  imports: [ConfigModule, CoreModule, HealthModule, AuthModule],
+  imports: [ConfigModule, CoreModule, HealthModule, AuthModule, PublicModule],
   providers: [
     // Guard global: negar por defeito (CLAUDE.md, regra 2).
     { provide: APP_GUARD, useClass: AuthGuard },

@@ -150,9 +150,21 @@ Fonte: `CLAUDE.md` (arquitetura, endpoints, regras de segurança e fases). O bac
 | T-BE-01 | Fundação: pacote `apps/api`, segurança (helmet, CORS fechado, cabeçalhos), guard global negar-por-defeito com `@Public()`, filtro de erros no formato do contrato, validação do ambiente, health público | 1 | Em desenvolvimento |
 | T-BE-02 | Supabase: projeto, schema `app`, RLS, papel `app_backend`, ligação do `SessionService` ao Supabase Auth e login BFF por cookies | 1 | Bloqueada (precisa de credenciais do dono do produto) |
 | T-BE-03 | `ValidationPipe` global com os schemas Zod partilhados; empacotamento executável do backend | 1 | Não iniciada |
+| T-BE-05 | Página pública no backend real: cartão e VCF por token e slug, eventos públicos (rate limit 60/min por IP, cache 60 s, noindex, 404 neutro, IP só como hash, deduplicação de 30 min). ADR-0014. Testes: `public/*.test.ts`, `common/{rate-limiter,ip-hash}.test.ts` e o teste de integração de `public_cards` | 3 | Em revisão (falta confirmar `TRUST_PROXY_HOPS` depois do deploy) |
 | T-BE-04+ | Módulos de domínio (empresas, membros, cartões, perfis, partilha, envio, estatísticas, temas, auditoria) sobre o contrato do ADR-0004 | 2–3 | Não iniciada |
 
 Critério de saída da fase 1 (CLAUDE.md): nenhum endpoint responde sem autenticação, exceto os `@Public()`. O guard global já o garante; falta a autenticação real (T-BE-02).
+
+### Modelação de ameaças (STRIDE) da página pública (T-BE-05)
+
+| Ameaça | Risco | Mitigação |
+|--------|-------|-----------|
+| Spoofing | Adivinhar tokens para descobrir cartões | Tokens de 128 bits aleatórios; 60 pedidos/min por IP; o mesmo 404 para tudo |
+| Tampering | Inflacionar estatísticas | Lista fechada de eventos; deduplicação de 30 min por cartão, tipo e hash do IP; empresa resolvida no servidor |
+| Repudiation | — | Eventos com data; o `contact_sent` só é registado pelo backend |
+| Information disclosure | Expor campos privados ou o estado do cartão | Vista `public_cards` (só ativos e campos públicos); `toPublicCard` filtra e valida; o `company_id` não sai; 404 neutro sem cache |
+| Denial of service | Inundar a página ou a base de dados | Rate limit; cache de 60 s; entradas mal formadas recusadas sem consultar a base de dados; `statement_timeout` de 10 s |
+| Elevation of privilege | Ler outras empresas pela página pública | Leitura sem contexto só pela vista; RLS nas tabelas; `app_backend` sem BYPASSRLS |
 
 ## Pressupostos
 

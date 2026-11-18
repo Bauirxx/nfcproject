@@ -168,9 +168,13 @@ NestJS 11 com adaptador Express (ADR-0010). Fundação, ligação ao Supabase Au
 | `src/health/health.controller.ts` | `GET /api/health` (`@Public`) → `{ status: 'ok' }` | `@nestjs/common`, `public.decorator` |
 | `src/auth/auth.controller.ts` | `POST /api/auth/login` (Supabase + cookies HttpOnly), `POST /api/auth/logout`, `GET /api/auth/session` | `supabase/supabase-auth.service`, `common/{session.service,cookies,zod-validation.pipe}`, `@nfc-business/shared/schemas` |
 | `src/common/cookies.ts` | `setSessionCookies`/`clearSessionCookies`: access token geral e refresh token restrito a /api/auth | `express` (tipos), `common/session.service` |
+| `src/public/public.controller.ts` | Rotas públicas (`@Public()`): cartão e VCF por token e por slug, `POST /api/public/events`; 60/min por IP, cache 60 s, `noindex`, 404 neutro (ADR-0014) | `public/public-card.service`, `common/{rate-limiter,ip-hash,zod-validation.pipe,public.decorator}`, `config/env`, `@nfc-business/shared/schemas` |
+| `src/public/public-card.service.ts` | `PublicCardService` (`find`, `buildVcf`, `recordEvent` com deduplicação de 30 min) e `toPublicCard` (saída filtrada e validada pelo contrato) | `database/database.service`, `@nfc-business/shared/{constants,links,schemas,validators,vcard}`; vista `app.public_cards`, tabela `app.analytics_events` |
+| `src/common/rate-limiter.ts` | `FixedWindowRateLimiter` em memória e `enforceRateLimit` (429 `rate_limited` com `Retry-After`) | `@nestjs/common`, `express` (tipo) |
+| `src/common/ip-hash.ts` | `hashIp` (HMAC-SHA256 com sal diário de `IP_HASH_SECRET`) | `node:crypto` |
 | `src/database/database.service.ts` | `DatabaseService` (`withContext`, `withoutContext`): pool `pg` com o papel `app_backend`, TLS verificado com a CA do Supabase e `set_config` do contexto RLS por transação; `runInContext`, `loadSupabaseCa` (ADR-0013). Disponível em todo o lado pelo `CoreModule` | `pg`, `config/env`, `certs/supabase-ca.crt`; tabelas do schema `app` (confirmado com a base de dados real) |
 
-Testes (Vitest): `config/env.test.ts`, `common/{auth.guard,api-exception.filter,zod-validation.pipe,session.service}.test.ts`, `supabase/supabase-auth.service.test.ts`, `auth/auth.controller.test.ts`, `database/database.service.test.ts` (33 testes) e `database/database.integration.test.ts` (5 testes contra a base de dados real, só com `DB_INTEGRATION=1`). O login real precisa de um utilizador criado no Supabase (manual). O `ZodValidationPipe` já consome os schemas de `@nfc-business/shared` (prova de que o backend usa o contrato partilhado). A ligação ao Supabase, a aplicação do pipe a endpoints reais e o empacotamento executável ficam para os próximos blocos (ADR-0010).
+Testes (Vitest): `config/env.test.ts`, `common/{auth.guard,api-exception.filter,zod-validation.pipe,session.service}.test.ts`, `supabase/supabase-auth.service.test.ts`, `auth/auth.controller.test.ts`, `database/database.service.test.ts`, `common/{rate-limiter,ip-hash}.test.ts`, `public/{public-card.service,public.controller}.test.ts` (55 testes) e `database/database.integration.test.ts` (10 testes contra a base de dados real, só com `DB_INTEGRATION=1`). O gerador de vCard vive agora em `packages/shared/src/vcard.ts` (usado pelo backend e pela API simulada). O login real precisa de um utilizador criado no Supabase (manual). O `ZodValidationPipe` já consome os schemas de `@nfc-business/shared` (prova de que o backend usa o contrato partilhado). A ligação ao Supabase, a aplicação do pipe a endpoints reais e o empacotamento executável ficam para os próximos blocos (ADR-0010).
 
 ## 4. Endpoints
 
@@ -193,9 +197,9 @@ Estado do contrato segundo o ADR-0004. Todos têm handler e testes na API simula
 | `POST`/`GET /api/contact-shares` | Confirmado / inferido | `contact-shares.ts` | `contactShare*Schema` | contact_shares, analytics_events, audit_logs | contact-sending, página pública (dono) |
 | `GET /api/analytics/summary` | Confirmado | `analytics.ts` | `analyticsQuerySchema`, `analyticsSummarySchema` | analytics_events, nfc_cards, companies | dashboard, analytics |
 | `GET /api/audit` | Confirmado | `audit.ts` | `auditQuerySchema`, `auditPageSchema` | audit_logs | audit |
-| `GET /api/public/cards/:token`, `.../contact.vcf` | Confirmado | `public.ts` | `publicCardSchema` | vista public_profiles, nfc_cards | public-card |
-| `GET /api/public/profiles/:slug`, `.../contact.vcf` | Inferido | `public.ts` | `publicCardSchema` | vista public_profiles, nfc_cards | public-card (`/p/:slug`) |
-| `POST /api/public/events` | Confirmado | `public.ts` | `publicEventRequestSchema` | analytics_events | public-card |
+| `GET /api/public/cards/:token`, `.../contact.vcf` | Confirmado | `public.ts`; **backend real:** `apps/api/src/public/public.controller.ts` | `publicCardSchema` | vista `app.public_cards` (confirmado) | public-card |
+| `GET /api/public/profiles/:slug`, `.../contact.vcf` | Inferido | `public.ts`; **backend real:** `public.controller.ts` | `publicCardSchema` | vista `app.public_cards` (confirmado) | public-card (`/p/:slug`) |
+| `POST /api/public/events` | Confirmado | `public.ts`; **backend real:** `public.controller.ts` | `publicEventRequestSchema` | `app.analytics_events` (confirmado) | public-card |
 
 ## 5. Tabelas (backend, inferido)
 

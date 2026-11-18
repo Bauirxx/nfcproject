@@ -29,6 +29,8 @@ async function bootstrap(): Promise<void> {
     next();
   });
   app.getHttpAdapter().getInstance().disable('x-powered-by');
+  // IP real do visitante atrás do Vercel e do Render (limites e hash dos IPs). Só confia no número de saltos configurado.
+  app.set('trust proxy', env.TRUST_PROXY_HOPS);
 
   app.setGlobalPrefix('api');
   app.enableShutdownHooks();

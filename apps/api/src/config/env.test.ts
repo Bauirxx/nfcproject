@@ -27,11 +27,18 @@ describe('loadEnv', () => {
   it('exige o Supabase e a base de dados em produção', () => {
     const supabase = { SUPABASE_URL: 'https://proj.supabase.co', SUPABASE_ANON_KEY: 'chave' };
     expect(() => loadEnv({ NODE_ENV: 'production' })).toThrow(/produção/);
+    const database = { DATABASE_URL: 'postgresql://app_backend.x:p@host:5432/postgres' };
     expect(() => loadEnv({ NODE_ENV: 'production', ...supabase })).toThrow(/DATABASE_URL/);
+    expect(() => loadEnv({ NODE_ENV: 'production', ...supabase, ...database })).toThrow(/IP_HASH_SECRET/);
     expect(
-      loadEnv({ NODE_ENV: 'production', ...supabase, DATABASE_URL: 'postgresql://app_backend.x:p@host:5432/postgres' })
-        .NODE_ENV,
+      loadEnv({ NODE_ENV: 'production', ...supabase, ...database, IP_HASH_SECRET: 'x'.repeat(32) }).NODE_ENV,
     ).toBe('production');
+  });
+
+  it('valida o segredo dos IPs e a origem pública', () => {
+    expect(() => loadEnv({ IP_HASH_SECRET: 'curto' })).toThrow(/IP_HASH_SECRET/);
+    expect(() => loadEnv({ PUBLIC_APP_URL: 'http://exemplo.com' })).toThrow(/PUBLIC_APP_URL/);
+    expect(loadEnv({ PUBLIC_APP_URL: 'https://app.exemplo.com/c/abc' }).PUBLIC_APP_URL).toBe('https://app.exemplo.com');
   });
 
   it('só aceita URLs PostgreSQL na base de dados', () => {

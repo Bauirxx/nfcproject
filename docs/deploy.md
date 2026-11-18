@@ -4,9 +4,9 @@ Arquitetura (CLAUDE.md): **backend no Render**, **frontend no Vercel**. O fronte
 sua própria origem (Vercel) e o Vercel reencaminha esses pedidos para o backend no Render (um *rewrite*),
 por isso para o browser tudo é a mesma origem e os cookies de sessão funcionam sem CORS.
 
-> **Estado atual:** o backend só tem a autenticação (login, logout, sessão) e o health. Depois do deploy,
-> o **login funciona**, mas os ecrãs que dependem de outros endpoints (cartões, perfis, etc.) ainda dão erro,
-> porque esses endpoints do backend ainda não foram construídos.
+> **Estado atual:** o backend tem a autenticação (login, logout, sessão), o health e a página pública
+> (cartão, VCF e eventos, ligados à base de dados). Os ecrãs do painel que dependem de outros endpoints
+> (cartões, perfis, etc.) ainda dão erro, porque esses endpoints ainda não foram construídos.
 
 ## 1. Backend no Render
 
@@ -16,6 +16,9 @@ por isso para o browser tudo é a mesma origem e os cookies de sessão funcionam
    - `SUPABASE_URL` = o URL do projeto Supabase (só o endereço, sem `/rest/v1/`).
    - `SUPABASE_ANON_KEY` = a chave anon/publishable.
    - `DATABASE_URL` = a mesma linha do `apps/api/.env`: o Session pooler com o utilizador `app_backend.<ref>` (ADR-0013). Nunca use a password do `postgres`.
+   - `IP_HASH_SECRET` é gerado pelo Render (Blueprint). Se criou o serviço à mão, defina um valor aleatório com pelo menos 32 caracteres.
+   - `TRUST_PROXY_HOPS` = `2` (Vercel → Render).
+   - `PUBLIC_APP_URL` = o endereço do frontend no Vercel (por exemplo `https://nfc-business.vercel.app`), depois de o publicar.
    - (`NODE_ENV=production`, `NODE_VERSION=24.22.2` já vêm do `render.yaml`.)
 4. **Deploy**. Quando terminar, o Render dá um URL, por exemplo `https://nfc-business-api.onrender.com`.
 5. Confirme: abra `https://…onrender.com/api/health` → deve mostrar `{"status":"ok"}`.

@@ -13,6 +13,7 @@
     "./permissions": "./src/permissions.ts",
     "./contrast": "./src/contrast.ts",
     "./images": "./src/images.ts",
+    "./vcard": "./src/vcard.ts",
     "./schemas": "./src/schemas/index.ts"
   },
   "scripts": {

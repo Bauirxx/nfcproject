@@ -27,6 +27,23 @@ export const envSchema = z.object({
     .optional(),
   /** Máximo de ligações do pool; o pooler do Supabase também limita. */
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
+  /**
+   * Segredo para o hash dos IPs nas estatísticas (regra 6): HMAC com sal diário derivado deste segredo.
+   * Obrigatório em produção; em desenvolvimento, sem ele, usa-se um valor aleatório por arranque.
+   */
+  IP_HASH_SECRET: z.string().min(32, 'too_short').optional(),
+  /**
+   * Número de proxies de confiança à frente do backend (`trust proxy` do Express), para obter o IP real do
+   * visitante nos limites e no hash. Vercel -> Render = 2; ligação direta ao Render = 1 (ADR-0014).
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
+  /** Origem pública do frontend (por exemplo https://nfc-business.vercel.app), usada no link do VCF. */
+  PUBLIC_APP_URL: z
+    .string()
+    .url()
+    .refine((value) => value.startsWith('https://') || value.startsWith('http://localhost'), 'https_required')
+    .transform((value) => new URL(value).origin)
+    .optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -39,9 +56,12 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Configuração de ambiente inválida: ${fields}.`);
   }
   const env = result.data;
-  if (env.NODE_ENV === 'production' && (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.DATABASE_URL)) {
+  if (
+    env.NODE_ENV === 'production' &&
+    (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.DATABASE_URL || !env.IP_HASH_SECRET)
+  ) {
     throw new Error(
-      'Configuração de ambiente inválida: SUPABASE_URL, SUPABASE_ANON_KEY e DATABASE_URL são obrigatórios em produção.',
+      'Configuração de ambiente inválida: SUPABASE_URL, SUPABASE_ANON_KEY, DATABASE_URL e IP_HASH_SECRET são obrigatórios em produção.',
     );
   }
   return env;

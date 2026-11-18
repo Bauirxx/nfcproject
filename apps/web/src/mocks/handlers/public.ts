@@ -4,9 +4,9 @@ import { HttpResponse, type HttpHandler } from 'msw';
 import type { PublicEventType } from '@nfc-business/shared/constants';
 import { publicEventRequestSchema, type PublicCard } from '@nfc-business/shared/schemas';
 import { isCardToken, isSlug } from '@nfc-business/shared/validators';
+import { buildVCard } from '@nfc-business/shared/vcard';
 import type { DbCard, DbProfile, MockDb } from '../db';
 import { activeCardOf, bumpCounter, type Metric } from '../domain';
-import { buildVCard } from '../vcard';
 import { fail, hitLimit, noContent, readBody, route } from './http';
 
 /** Deduplicação dos eventos públicos (CLAUDE.md, regra 6). */

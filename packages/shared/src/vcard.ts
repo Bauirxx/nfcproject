@@ -1,7 +1,7 @@
-// Gerador de vCard 4.0 (RFC 6350) da API simulada. Faz o papel do backend (CLAUDE.md, regra 4): escapa todos os
-// campos, remove caracteres de controlo e dobra as linhas a 75 octetos. Só recebe dados já marcados como públicos.
-import type { PublicContact, PublicSocialLink } from '@nfc-business/shared/schemas';
-import { isE164 } from '@nfc-business/shared/validators';
+// Gerador de vCard 4.0 (RFC 6350), partilhado pelo backend e pela API simulada (CLAUDE.md, regra 4): escapa todos
+// os campos, remove caracteres de controlo e dobra as linhas a 75 octetos. Só recebe dados já marcados como públicos.
+import type { PublicContact, PublicSocialLink } from './schemas/profiles';
+import { isE164 } from './validators';
 
 export interface VCardInput {
   displayName: string;
@@ -9,8 +9,8 @@ export interface VCardInput {
   company: string | null;
   contacts: readonly PublicContact[];
   socialLinks: readonly PublicSocialLink[];
-  /** URL da página pública do cartão, incluído como ligação do contacto. */
-  cardUrl: string;
+  /** URL da página pública do cartão, incluído como ligação do contacto (omitido se não houver origem pública). */
+  cardUrl: string | null;
   /** Data da última alteração do perfil (ISO 8601). */
   revision: string;
 }
@@ -64,7 +64,7 @@ function structuredName(displayName: string): string {
 
 export function buildVCard(input: VCardInput): string {
   const esc = escapeVCardText;
-  const lines = ['BEGIN:VCARD', 'VERSION:4.0', 'PRODID:-//NFC Business//API simulada//PT', `FN:${esc(input.displayName)}`];
+  const lines = ['BEGIN:VCARD', 'VERSION:4.0', 'PRODID:-//NFC Business//PT', `FN:${esc(input.displayName)}`];
   lines.push(structuredName(input.displayName));
   if (input.company) lines.push(`ORG:${esc(input.company)}`);
   if (input.title) lines.push(`TITLE:${esc(input.title)}`);
@@ -94,7 +94,7 @@ export function buildVCard(input: VCardInput): string {
   for (const link of input.socialLinks) {
     lines.push(`X-SOCIALPROFILE;TYPE=${link.platform}:${esc(link.url)}`);
   }
-  lines.push(`URL;TYPE=x-nfc-card:${esc(input.cardUrl)}`);
+  if (input.cardUrl) lines.push(`URL;TYPE=x-nfc-card:${esc(input.cardUrl)}`);
   lines.push(`REV:${toVCardTimestamp(input.revision)}`);
   lines.push('END:VCARD');
   return `${lines.map(foldLine).join('\r\n')}\r\n`;

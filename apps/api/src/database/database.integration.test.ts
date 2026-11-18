@@ -106,6 +106,46 @@ describe.runIf(enabled)('DatabaseService (base de dados real)', () => {
     expect(privileges).toEqual({ sel: true, write: false, audit_write: false });
   });
 
+  it('public_cards só mostra cartões ativos e só os campos públicos (dados de teste com rollback)', async () => {
+    const rollback = new Error('rollback de teste');
+    let seen: { tokens: string[]; row: Record<string, unknown> | undefined } | undefined;
+    await expect(
+      service.withContext({ companyId: null, isPlatformAdmin: true }, async (db) => {
+        await db.query(`insert into app.companies (id, name, contact_email) values ('co_it', 'IT', 'it@exemplo.test')`);
+        await db.query(
+          `insert into app.profiles (id, company_id, slug, display_name, title, bio, visibility, contacts)
+           values ('p_it', 'co_it', 'perfil-it', 'Perfil IT', 'Cargo privado', 'Bio pública',
+                   '{"title":false,"company":true,"bio":true,"photo":true}',
+                   '[{"id":"k1","type":"phone","value":"+258841234567","isPublic":true},
+                     {"id":"k2","type":"email","value":"privado@exemplo.test","isPublic":false}]')`,
+        );
+        await db.query(
+          `insert into app.cards (id, company_id, label, token, status, profile_id) values
+             ('c_it_a', 'co_it', 'A', 'ItAtivoAAAAAAAAAAAAAAA', 'active',  'p_it'),
+             ('c_it_b', 'co_it', 'B', 'ItBloqueadoBBBBBBBBBBB', 'blocked', 'p_it'),
+             ('c_it_l', 'co_it', 'L', 'ItPerdidoLLLLLLLLLLLLL', 'lost',    'p_it')`,
+        );
+        const result = await db.query<Record<string, unknown>>(
+          `select * from app.public_cards where company_id = 'co_it' order by token`,
+        );
+        seen = { tokens: result.rows.map((r) => String(r.token)), row: result.rows[0] };
+        throw rollback;
+      }),
+    ).rejects.toBe(rollback);
+
+    expect(seen?.tokens).toEqual(['ItAtivoAAAAAAAAAAAAAAA']);
+    expect(seen?.row).toMatchObject({ title: null, bio: 'Bio pública', slug: 'perfil-it' });
+    expect(JSON.stringify(seen?.row?.contacts)).not.toContain('privado@exemplo.test');
+    expect(JSON.stringify(seen?.row?.contacts)).not.toContain('"id"');
+
+    // O rollback não deixou nada para trás.
+    const left = await service.withContext({ companyId: null, isPlatformAdmin: true }, async (db) => {
+      const result = await db.query<{ n: number }>(`select count(*)::int as n from app.companies where id = 'co_it'`);
+      return result.rows[0]?.n;
+    });
+    expect(left).toBe(0);
+  });
+
   it('o app_backend não pode correr a anonimização (só o pg_cron)', async () => {
     await expect(
       service.withoutContext((db) => db.query('select app.anonymize_old_contact_shares()')),

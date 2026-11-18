@@ -23,3 +23,12 @@ services:
       # Session pooler com o papel app_backend (ADR-0013). Segredo: definido só no painel do Render.
       - key: DATABASE_URL
         sync: false
+      # Hash dos IPs nas estatísticas (ADR-0014): o Render gera um valor aleatório.
+      - key: IP_HASH_SECRET
+        generateValue: true
+      # O frontend no Vercel reencaminha /api para o Render: dois proxies à frente do backend.
+      - key: TRUST_PROXY_HOPS
+        value: '2'
+      # Origem do frontend (link do cartão no VCF), definida depois de publicar no Vercel.
+      - key: PUBLIC_APP_URL
+        sync: false

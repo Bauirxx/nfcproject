@@ -2,6 +2,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { loadEnv } from '../config/env';
 import { DatabaseService, loadSupabaseCa, runInContext } from './database.service';
 
 function fakePool(failOn?: string) {
@@ -84,7 +85,7 @@ describe('loadSupabaseCa', () => {
 
 describe('DatabaseService', () => {
   it('recusa operar sem DATABASE_URL', () => {
-    const service = new DatabaseService({ NODE_ENV: 'test', PORT: 3000, DATABASE_POOL_MAX: 5 });
+    const service = new DatabaseService(loadEnv({ NODE_ENV: 'test' }));
     expect(service.configured).toBe(false);
     expect(() => service.withoutContext(async () => 1)).toThrow(/DATABASE_URL/);
   });
