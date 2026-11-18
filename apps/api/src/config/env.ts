@@ -56,13 +56,13 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(`Configuração de ambiente inválida: ${fields}.`);
   }
   const env = result.data;
-  if (
-    env.NODE_ENV === 'production' &&
-    (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.DATABASE_URL || !env.IP_HASH_SECRET)
-  ) {
-    throw new Error(
-      'Configuração de ambiente inválida: SUPABASE_URL, SUPABASE_ANON_KEY, DATABASE_URL e IP_HASH_SECRET são obrigatórios em produção.',
-    );
+  if (env.NODE_ENV === 'production') {
+    // Indica só os nomes em falta (nunca valores), para o diagnóstico no painel do alojamento.
+    const required = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'DATABASE_URL', 'IP_HASH_SECRET'] as const;
+    const missing = required.filter((name) => !env[name]);
+    if (missing.length > 0) {
+      throw new Error(`Configuração de ambiente inválida: faltam em produção ${missing.join(', ')}.`);
+    }
   }
   return env;
 }

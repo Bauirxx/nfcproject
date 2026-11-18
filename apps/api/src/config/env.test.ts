@@ -28,7 +28,9 @@ describe('loadEnv', () => {
     const supabase = { SUPABASE_URL: 'https://proj.supabase.co', SUPABASE_ANON_KEY: 'chave' };
     expect(() => loadEnv({ NODE_ENV: 'production' })).toThrow(/produção/);
     const database = { DATABASE_URL: 'postgresql://app_backend.x:p@host:5432/postgres' };
-    expect(() => loadEnv({ NODE_ENV: 'production', ...supabase })).toThrow(/DATABASE_URL/);
+    expect(() => loadEnv({ NODE_ENV: 'production', ...supabase })).toThrow(
+      'Configuração de ambiente inválida: faltam em produção DATABASE_URL, IP_HASH_SECRET.',
+    );
     expect(() => loadEnv({ NODE_ENV: 'production', ...supabase, ...database })).toThrow(/IP_HASH_SECRET/);
     expect(
       loadEnv({ NODE_ENV: 'production', ...supabase, ...database, IP_HASH_SECRET: 'x'.repeat(32) }).NODE_ENV,
