@@ -121,6 +121,44 @@ export class SupabaseAuthService {
     }
   }
 
+  /** Cliente isolado, sem sessão, para fluxos de uso único (recuperação). */
+  private isolatedClient(): SupabaseClient | null {
+    if (!this.env.SUPABASE_URL || !this.env.SUPABASE_ANON_KEY) return null;
+    return createClient(this.env.SUPABASE_URL, this.env.SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
+
+  /**
+   * Pede ao Supabase o email de recuperação. O modelo de email do Supabase aponta para
+   * `<redirectTo>?token={{ .TokenHash }}` (docs/deploy.md). Erros são ignorados: a resposta é sempre a mesma.
+   */
+  async sendRecovery(email: string, redirectTo: string | null): Promise<void> {
+    const client = this.isolatedClient();
+    if (!client) return;
+    try {
+      await client.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo } : undefined);
+    } catch {
+      // Mensagem genérica: nunca revela se a conta existe nem se o envio falhou.
+    }
+  }
+
+  /**
+   * Conclui a recuperação: valida o token de uso único (o Supabase consome-o e aplica a validade de 1 hora),
+   * muda a palavra-passe e termina todas as sessões (regra 1). Devolve a identidade, ou `null` se o token for
+   * inválido, expirado ou já usado.
+   */
+  async resetPassword(tokenHash: string, password: string): Promise<AuthIdentity | null> {
+    const client = this.isolatedClient();
+    if (!client) return null;
+    const { data, error } = await client.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+    if (error || !data.session || !data.user) return null;
+    const updated = await client.auth.updateUser({ password });
+    if (updated.error) return null;
+    await client.auth.signOut({ scope: 'global' });
+    return mapSupabaseUser(data.user);
+  }
+
   /** Muda o nome (user_metadata.name) do próprio utilizador. */
   async updateName(tokens: SessionTokens, name: string): Promise<boolean> {
     const session = await this.userClient(tokens);

@@ -36,6 +36,19 @@ por isso para o browser tudo é a mesma origem e os cookies de sessão funcionam
 4. **Deploy**. O Vercel dá um URL, por exemplo `https://nfc-business.vercel.app`.
 5. Confirme: abra o site e faça login com o utilizador criado no Supabase.
 
+## 4. Supabase: recuperação da palavra-passe
+
+O backend pede o email ao Supabase. O link tem de abrir a página `/definir-password` do site com o token de uso único:
+
+1. **Authentication → URL Configuration**:
+   - **Site URL** = `https://nfcproject-zeta.vercel.app`;
+   - em **Redirect URLs**, acrescente `https://nfcproject-zeta.vercel.app/definir-password`.
+2. **Authentication → Emails → Reset Password**: troque o link do modelo por
+   `<a href="{{ .RedirectTo }}?token={{ .TokenHash }}">Definir uma nova palavra-passe</a>`.
+3. **Authentication → Sign In / Providers → Email**: confirme que a validade do link (Email OTP Expiration) é `3600` segundos (1 hora, regra 1).
+
+O envio de emails do Supabase tem um limite baixo de mensagens por hora. Para produção, configure um SMTP próprio (Resend), o mesmo que o envio de contacto vai usar.
+
 ## Notas
 
 - As chaves do Supabase ficam só nos painéis do Render e do Vercel (e no `.env` local), nunca no repositório.

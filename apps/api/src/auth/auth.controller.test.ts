@@ -10,6 +10,9 @@ import { loadEnv } from '../config/env';
 import type { SignInResult, SupabaseAuthService } from '../supabase/supabase-auth.service';
 import { AuthController } from './auth.controller';
 
+const breached = vi.hoisted(() => ({ value: false }));
+vi.mock('../common/breached-password', () => ({ isBreachedPassword: vi.fn(async () => breached.value) }));
+
 const env = loadEnv({ NODE_ENV: 'development', IP_HASH_SECRET: 's'.repeat(32) });
 const identity: AuthIdentity = {
   id: 'u1',
@@ -41,8 +44,11 @@ function controllerWith(options: {
   toSession?: () => Promise<ResolvedSession>;
   getUser?: () => Promise<SessionUser | null>;
   refresh?: () => Promise<SignInResult | null>;
+  resetPassword?: () => Promise<AuthIdentity | null>;
 }) {
   const supabase = {
+    sendRecovery: vi.fn(async () => undefined),
+    resetPassword: vi.fn(options.resetPassword ?? (async () => null)),
     signIn: options.signIn ?? (async () => null),
     refresh: vi.fn(options.refresh ?? (async () => null)),
     revoke: vi.fn(async () => undefined),
@@ -147,6 +153,41 @@ describe('AuthController', () => {
     await expect(
       revoked.controller.refresh({ headers: { cookie: 'nfc_refresh=velho' } } as unknown as Request, fakeRes()),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('recover responde sempre igual e pede o link com o destino /definir-password', async () => {
+    const withOrigin = loadEnv({ NODE_ENV: 'development', IP_HASH_SECRET: 's'.repeat(32), PUBLIC_APP_URL: 'https://app.exemplo.com' });
+    const { supabase } = controllerWith({});
+    const controller = new AuthController(
+      supabase,
+      { accessToken: () => null } as unknown as SessionService,
+      new CsrfService(withOrigin),
+      { record: vi.fn(async () => undefined) } as unknown as AuditService,
+      withOrigin,
+    );
+    await expect(controller.recover({ email: 'ninguem@exemplo.test' }, req(), fakeRes())).resolves.toBeUndefined();
+    expect(supabase.sendRecovery).toHaveBeenCalledWith('ninguem@exemplo.test', 'https://app.exemplo.com/definir-password');
+  });
+
+  it('recover/confirm: vazada não gasta o token; token inválido dá 400; sucesso audita e limpa os cookies', async () => {
+    breached.value = true;
+    const weak = controllerWith({ resetPassword: async () => identity });
+    await expect(
+      weak.controller.recoverConfirm({ token: 't'.repeat(40), password: 'password123456' }, req(), fakeRes()),
+    ).rejects.toMatchObject({ response: { error: { code: 'weak_password' } } });
+    expect(weak.supabase.resetPassword).not.toHaveBeenCalled();
+    breached.value = false;
+
+    const invalid = controllerWith({ resetPassword: async () => null });
+    await expect(
+      invalid.controller.recoverConfirm({ token: 't'.repeat(40), password: 'NovaSegura#2026' }, req(), fakeRes()),
+    ).rejects.toMatchObject({ response: { error: { code: 'invalid_token' } } });
+
+    const ok = controllerWith({ resetPassword: async () => identity });
+    const res = fakeRes();
+    await ok.controller.recoverConfirm({ token: 't'.repeat(40), password: 'NovaSegura#2026' }, req(), res);
+    expect(ok.audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'auth.password_changed' }));
+    expect(res.clearCookie).toHaveBeenCalledTimes(2);
   });
 
   it('sem sessão mas com refresh token, a sessão indica refreshable', async () => {
