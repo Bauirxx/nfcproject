@@ -98,6 +98,29 @@ export class SupabaseAuthService {
     return { accessToken: data.session.access_token, refreshToken: data.session.refresh_token, identity };
   }
 
+  /**
+   * Renova a sessão com o refresh token (rotação do Supabase: o anterior deixa de valer). Mantém o nível de
+   * garantia (aal) da sessão original. Devolve `null` se o refresh token for inválido, expirado ou revogado.
+   */
+  async refresh(refreshToken: string): Promise<SignInResult | null> {
+    if (!this.client) return null;
+    const { data, error } = await this.client.auth.refreshSession({ refresh_token: refreshToken });
+    if (error || !data.session || !data.user) return null;
+    const identity = mapSupabaseUser(data.user);
+    if (!identity) return null;
+    return { accessToken: data.session.access_token, refreshToken: data.session.refresh_token, identity };
+  }
+
+  /** Revoga a sessão atual no Supabase (logout): o refresh token deixa de servir. Falhas são ignoradas. */
+  async revoke(tokens: SessionTokens): Promise<void> {
+    try {
+      const session = await this.userClient(tokens);
+      await session?.client.auth.signOut({ scope: 'local' });
+    } catch {
+      // Os cookies são apagados na mesma; o access token expira sozinho.
+    }
+  }
+
   // MFA (TOTP) do Supabase, sempre no contexto da sessão do próprio utilizador (nunca com service_role).
 
   /** Cliente isolado com a sessão do utilizador (tokens dos cookies). Pode renovar os tokens. */

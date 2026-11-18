@@ -6,10 +6,11 @@ import {
   type SessionResponse,
 } from '@nfc-business/shared/schemas';
 import type { Request, Response } from 'express';
-import { clearSessionCookies, setSessionCookies } from '../common/cookies';
+import { auditActorOf } from '../common/access';
+import { clearSessionCookies, REFRESH_TOKEN_COOKIE, setSessionCookies } from '../common/cookies';
 import { CsrfService } from '../common/csrf';
 import { Public } from '../common/public.decorator';
-import { SessionService } from '../common/session.service';
+import { readCookie, SessionService } from '../common/session.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { ENV, type Env } from '../config/env';
 import { readAal, SupabaseAuthService } from '../supabase/supabase-auth.service';
@@ -75,11 +76,36 @@ export class AuthController {
     return { status: 'authenticated', user: session.user };
   }
 
+  /** Termina a sessão: revoga-a no Supabase (o refresh token deixa de servir), regista e apaga os cookies. */
   @Public()
   @Post('logout')
   @HttpCode(204)
-  logout(@Res({ passthrough: true }) res: Response): void {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
+    const accessToken = this.sessions.accessToken(req);
+    const refreshToken = readCookie(req.headers.cookie, REFRESH_TOKEN_COOKIE);
+    if (accessToken && refreshToken) {
+      const user = await this.sessions.getUser(req);
+      await this.supabaseAuth.revoke({ accessToken, refreshToken });
+      if (user) await this.audit.record({ action: 'auth.logout', actor: auditActorOf(user) });
+    }
     clearSessionCookies(res, this.secure);
+  }
+
+  /**
+   * Renova a sessão com o refresh token (cookie HttpOnly restrito a /api/auth, ADR-0005). O Supabase roda o
+   * refresh token e mantém o nível de garantia (aal). Sem refresh token válido: 401 e os cookies são apagados.
+   */
+  @Public()
+  @Post('refresh')
+  @HttpCode(204)
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
+    const refreshToken = readCookie(req.headers.cookie, REFRESH_TOKEN_COOKIE);
+    const result = refreshToken ? await this.supabaseAuth.refresh(refreshToken) : null;
+    if (!result) {
+      clearSessionCookies(res, this.secure);
+      throw new UnauthorizedException({ error: { code: 'unauthenticated' } });
+    }
+    setSessionCookies(res, result.accessToken, result.refreshToken, this.secure);
   }
 
   /**
@@ -90,6 +116,10 @@ export class AuthController {
   @Get('session')
   async session(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<SessionResponse> {
     res.setHeader('Cache-Control', 'no-store');
-    return { user: await this.sessions.getUser(req), csrfToken: this.csrf.tokenForRequest(req) };
+    const user = await this.sessions.getUser(req);
+    const response: SessionResponse = { user, csrfToken: this.csrf.tokenForRequest(req) };
+    // Sem sessão mas com refresh token: o cliente deve renovar (ADR-0005).
+    if (!user && readCookie(req.headers.cookie, REFRESH_TOKEN_COOKIE)) response.refreshable = true;
+    return response;
   }
 }

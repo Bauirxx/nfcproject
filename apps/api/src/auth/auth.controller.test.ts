@@ -40,9 +40,15 @@ function controllerWith(options: {
   signIn?: () => Promise<SignInResult | null>;
   toSession?: () => Promise<ResolvedSession>;
   getUser?: () => Promise<SessionUser | null>;
+  refresh?: () => Promise<SignInResult | null>;
 }) {
-  const supabase = { signIn: options.signIn ?? (async () => null) } as unknown as SupabaseAuthService;
+  const supabase = {
+    signIn: options.signIn ?? (async () => null),
+    refresh: vi.fn(options.refresh ?? (async () => null)),
+    revoke: vi.fn(async () => undefined),
+  } as unknown as SupabaseAuthService;
   const sessions = {
+    accessToken: (r: Request) => (String(r.headers.cookie ?? '').match(/nfc_access=([^;]+)/)?.[1] ?? null),
     getUser: options.getUser ?? (async () => null),
     toSession:
       options.toSession ??
@@ -50,7 +56,7 @@ function controllerWith(options: {
   } as unknown as SessionService;
   const csrf = new CsrfService(env);
   const audit = { record: vi.fn(async () => undefined) } as unknown as AuditService;
-  return { controller: new AuthController(supabase, sessions, csrf, audit, env), csrf, audit };
+  return { controller: new AuthController(supabase, sessions, csrf, audit, env), csrf, audit, supabase };
 }
 
 describe('AuthController', () => {
@@ -106,11 +112,48 @@ describe('AuthController', () => {
     expect(res.setHeader).toHaveBeenCalledWith('Retry-After', expect.any(String));
   });
 
-  it('logout limpa os cookies', () => {
-    const { controller } = controllerWith({});
+  it('logout revoga a sessão no Supabase, regista a saída e limpa os cookies', async () => {
+    const { controller, supabase, audit } = controllerWith({ getUser: async () => user });
     const res = fakeRes();
-    controller.logout(res);
+    await controller.logout({ headers: { cookie: 'nfc_access=a.b.c; nfc_refresh=r1' } } as unknown as Request, res);
+    expect(supabase.revoke).toHaveBeenCalledWith({ accessToken: 'a.b.c', refreshToken: 'r1' });
+    expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'auth.logout' }));
     expect(res.clearCookie).toHaveBeenCalledTimes(2);
+
+    const anonymous = controllerWith({});
+    const res2 = fakeRes();
+    await anonymous.controller.logout({ headers: {} } as unknown as Request, res2);
+    expect(anonymous.supabase.revoke).not.toHaveBeenCalled();
+    expect(res2.clearCookie).toHaveBeenCalledTimes(2);
+  });
+
+  it('refresh renova os cookies com o refresh token; sem ele (ou inválido) dá 401 e limpa os cookies', async () => {
+    const ok = controllerWith({ refresh: async () => ({ accessToken: 'novo', refreshToken: 'r2', identity }) });
+    const res = fakeRes();
+    await ok.controller.refresh({ headers: { cookie: 'nfc_refresh=r1' } } as unknown as Request, res);
+    expect(ok.supabase.refresh).toHaveBeenCalledWith('r1');
+    expect(res.cookie).toHaveBeenCalledWith('nfc_access', 'novo', expect.objectContaining({ httpOnly: true }));
+    expect(res.cookie).toHaveBeenCalledWith('nfc_refresh', 'r2', expect.objectContaining({ path: '/api/auth' }));
+
+    const missing = controllerWith({});
+    const res2 = fakeRes();
+    await expect(missing.controller.refresh({ headers: {} } as unknown as Request, res2)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(missing.supabase.refresh).not.toHaveBeenCalled();
+    expect(res2.clearCookie).toHaveBeenCalledTimes(2);
+
+    const revoked = controllerWith({ refresh: async () => null });
+    await expect(
+      revoked.controller.refresh({ headers: { cookie: 'nfc_refresh=velho' } } as unknown as Request, fakeRes()),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('sem sessão mas com refresh token, a sessão indica refreshable', async () => {
+    const { controller } = controllerWith({});
+    const result = await controller.session({ headers: { cookie: 'nfc_refresh=r1' } } as unknown as Request, fakeRes());
+    expect(result).toMatchObject({ user: null, refreshable: true });
+    expect(sessionResponseSchema.safeParse(result).success).toBe(true);
   });
 
   it('a sessão devolve o utilizador e o token CSRF no contrato, sem cache', async () => {
