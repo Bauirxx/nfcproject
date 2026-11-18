@@ -25,7 +25,7 @@ por isso para o browser tudo é a mesma origem e os cookies de sessão funcionam
 
 ## 2. Ligar o Vercel ao backend
 
-1. No repositório, abra `vercel.json` e troque `https://SUBSTITUA-PELO-URL-DO-RENDER` pelo URL do Render do passo 1.
+1. (Feito a 2026-11-18) O `vercel.json` aponta para `https://nfcproject-im6b.onrender.com`. Se o serviço do Render mudar de URL, troque-o aí.
 2. Faça commit e push dessa alteração.
 
 ## 3. Frontend no Vercel
