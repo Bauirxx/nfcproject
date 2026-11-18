@@ -2,13 +2,11 @@
 // incluído. A injeção de dependências é explícita (`@Inject`), por isso não dependemos de `emitDecoratorMetadata`.
 import { build } from 'esbuild';
 
-await build({
-  entryPoints: ['src/main.ts'],
+const shared = {
   bundle: true,
   platform: 'node',
   target: 'node22',
   format: 'cjs',
-  outfile: 'dist/server.cjs',
   tsconfig: 'tsconfig.json',
   logLevel: 'info',
   // Dependências opcionais que o NestJS carrega só se existirem (não as usamos): ficam de fora do pacote.
@@ -24,7 +22,13 @@ await build({
     '@fastify/static',
     // Ligação nativa opcional do `pg` (usamos a implementação em JavaScript).
     'pg-native',
+    // Módulo nativo: carregado de node_modules em runtime (binário da plataforma instalado pelo pnpm).
+    'sharp',
   ],
-});
+};
 
-console.log('Backend empacotado em dist/server.cjs');
+await build({ ...shared, entryPoints: ['src/main.ts'], outfile: 'dist/server.cjs' });
+// Worker isolada do processamento de imagens (regra 8): ficheiro à parte, lançado sem variáveis de ambiente.
+await build({ ...shared, entryPoints: ['src/uploads/image-worker.ts'], outfile: 'dist/image-worker.cjs' });
+
+console.log('Backend empacotado em dist/server.cjs e dist/image-worker.cjs');

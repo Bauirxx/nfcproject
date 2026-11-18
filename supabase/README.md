@@ -13,7 +13,8 @@ Migrações do schema `app` do NFC Business (CLAUDE.md, regra 3). São SQL simpl
    - cria `contact_shares`, `email_suppressions`, `analytics_events` e `audit_logs` (esta é append-only: sem permissão de alterar ou apagar e com um trigger que o recusa);
    - cria a vista `public_cards` (só cartões ativos e só campos públicos) e a função de anonimização.
    - Para verificar: `DB_INTEGRATION=1 pnpm --filter @nfc-business/api test`.
-6. **Ligação do backend (ADR-0013):**
+6. **Migração 0003** (`migrations/0003_uploads.sql`, ADR-0018): tabela `app.uploads` e buckets `uploads-quarantine` (privado) e `public-images` (público). Cole no SQL Editor e clique em **Run**.
+7. **Ligação do backend (ADR-0013):**
    - No SQL Editor, corra `alter role app_backend with login nobypassrls password '<password longa, só letras e números>';`.
    - Em **Connect → Direct → Session pooler**, copie o URL. Troque `postgres.` por `app_backend.` e ponha a password. Guarde-o como `DATABASE_URL` no `apps/api/.env` e nas variáveis do Render.
    - Em **Database → Settings → SSL configuration**, ative **Enforce SSL**. O certificado (**Download certificate**) já está em `apps/api/certs/supabase-ca.crt`.

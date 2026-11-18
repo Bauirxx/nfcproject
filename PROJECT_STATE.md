@@ -88,7 +88,7 @@ Nenhum.
 
 ## Decisões
 
-Ver `docs/adr/` (0001 a 0017). A estratégia de testes e a API simulada estão no ADR-0009; os códigos de erro da API simulada a confirmar pelo backend estão no complemento do ADR-0004.
+Ver `docs/adr/` (0001 a 0018). A estratégia de testes e a API simulada estão no ADR-0009; os códigos de erro da API simulada a confirmar pelo backend estão no complemento do ADR-0004.
 
 Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
@@ -97,6 +97,13 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 - O tema é um store ao nível do módulo (`app/theme.ts`) sobre a única leitura de `localStorage` permitida (`shared/lib/theme-preference.ts`); o modo escuro é a classe `dark` em `<html>`.
 
 ## Alterações recentes
+
+- 2026-11-18: **Uploads de imagens (ADR-0018).**
+  - `POST /api/uploads/sign` e `PUT /api/uploads/:fileId`: magic bytes, 2 MB, tamanho exato, quarentena, sharp numa worker isolada (`env: {}`) e WebP sem EXIF no bucket público.
+  - Os perfis (fotografia e logótipo do tema) e as empresas (logótipo) consomem o `fileId` uma única vez.
+  - Migração `supabase/migrations/0003_uploads.sql` (tabela `app.uploads` com RLS e buckets `uploads-quarantine` e `public-images`), **por aplicar pelo dono**.
+  - Novas dependências: `sharp` 0.35.5 (binários por plataforma no lockfile, Linux incluído) e `express` 5.2.1 direto.
+  - Verificado: 100 testes unitários (EXIF removido, SVG e tipos disfarçados recusados) e a worker empacotada a processar um JPEG real sem variáveis de ambiente.
 
 - 2026-11-18: **Convites, empresas e membros no backend real (ADR-0017: service_role isolada, decisão do dono).**
   - `SupabaseAdminService` é o único com a chave e só faz `invite`, `setRole` e `deleteUser`.

@@ -8,7 +8,6 @@ import {
   Patch,
   Post,
   Req,
-  UnprocessableEntityException,
 } from '@nestjs/common';
 import {
   companyCreateRequestSchema,
@@ -25,6 +24,7 @@ import type { AuthedRequest } from '../common/auth.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { DatabaseService, type Queryable } from '../database/database.service';
 import { MembersService } from '../members/members.service';
+import { UploadsService } from '../uploads/uploads.service';
 
 /** Marca usada quando a empresa ainda não tem uma guardada (mesma da API simulada). */
 export const DEFAULT_BRAND = { primaryColor: '#1e40af', accentColor: '#0f766e' } as const;
@@ -70,6 +70,7 @@ export class CompaniesController {
     @Inject(DatabaseService) private readonly database: DatabaseService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(MembersService) private readonly members: MembersService,
+    @Inject(UploadsService) private readonly uploads: UploadsService,
   ) {}
 
   @Get()
@@ -98,11 +99,11 @@ export class CompaniesController {
     @Req() req: AuthedRequest,
   ): Promise<Company> {
     const user = requirePermission(req, 'companies.manage');
-    if (body.logoFileId) throw new UnprocessableEntityException({ error: { code: 'invalid_file' } });
     const company = await this.database.withContext(dbContextOf(user), async (db) => {
+      const logoUrl = body.logoFileId ? await this.uploads.consume(db, user, body.logoFileId, 'company_logo') : null;
       const inserted = await db.query<{ id: string }>(
-        `insert into app.companies (name, contact_email, brand) values ($1, $2, $3::jsonb) returning id`,
-        [body.name, body.contactEmail, JSON.stringify(body.brand)],
+        `insert into app.companies (name, contact_email, brand, logo_url) values ($1, $2, $3::jsonb, $4) returning id`,
+        [body.name, body.contactEmail, JSON.stringify(body.brand), logoUrl],
       );
       const id = inserted.rows[0]!.id;
       await this.members.invite(db, body.adminEmail, 'company_admin', id);
@@ -124,18 +125,23 @@ export class CompaniesController {
     @Req() req: AuthedRequest,
   ): Promise<Company> {
     const user = requirePermission(req, 'companies.manage');
-    // Os uploads (logótipo) ainda não existem no backend: só se aceita remover o logótipo.
-    if (body.logoFileId) throw new UnprocessableEntityException({ error: { code: 'invalid_file' } });
     const company = await this.database.withContext(dbContextOf(user), async (db) => {
-      await this.findOr404(db, id);
+      const current = await this.findOr404(db, id);
+      // `null` remove o logótipo; um fileId usa a imagem já processada; omitido mantém o atual.
+      const logoUrl =
+        body.logoFileId === undefined
+          ? current.logoUrl
+          : body.logoFileId === null
+            ? null
+            : await this.uploads.consume(db, user, body.logoFileId, 'company_logo');
       await db.query(
         `update app.companies
             set name = coalesce($2, name),
                 contact_email = coalesce($3, contact_email),
                 brand = coalesce($4::jsonb, brand),
-                logo_url = case when $5 then null else logo_url end
+                logo_url = $5
           where id = $1`,
-        [id, body.name ?? null, body.contactEmail ?? null, body.brand ? JSON.stringify(body.brand) : null, body.logoFileId === null],
+        [id, body.name ?? null, body.contactEmail ?? null, body.brand ? JSON.stringify(body.brand) : null, logoUrl],
       );
       return this.findOr404(db, id);
     });

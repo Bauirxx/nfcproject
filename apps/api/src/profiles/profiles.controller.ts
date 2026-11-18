@@ -32,6 +32,7 @@ import type { AuthedRequest } from '../common/auth.guard';
 import type { SessionUser } from '../common/session-user';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { DatabaseService, type Queryable } from '../database/database.service';
+import { UploadsService } from '../uploads/uploads.service';
 
 type ProfileListQuery = z.output<typeof profileListQuerySchema>;
 
@@ -134,6 +135,7 @@ export class ProfilesController {
   constructor(
     @Inject(DatabaseService) private readonly database: DatabaseService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(UploadsService) private readonly uploads: UploadsService,
   ) {}
 
   @Get()
@@ -199,8 +201,6 @@ export class ProfilesController {
     // Autorizações antes de qualquer alteração: dono só pelo company_admin (P-10), tema só por quem gere temas (P-03).
     if (body.ownerUserId !== undefined && !can(user.role, 'profiles.assignOwner')) throw forbidden();
     if (body.theme !== undefined && !can(user.role, 'themes.manage')) throw forbidden();
-    // Os uploads (fotografia e logótipo) ainda não existem no backend: só se aceita remover.
-    if (body.photoFileId || body.theme?.logoFileId) throw new UnprocessableEntityException({ error: { code: 'invalid_file' } });
 
     const profile = await this.database.withContext(dbContextOf(user), async (db) => {
       const current = await this.findOr404(db, user, id, true);
@@ -214,8 +214,20 @@ export class ProfilesController {
       let theme = current.theme;
       if (body.theme !== undefined) {
         const { logoFileId, ...colors } = body.theme;
-        theme = { ...colors, logoUrl: logoFileId === null ? null : current.theme.logoUrl };
+        const logoUrl =
+          logoFileId === undefined
+            ? current.theme.logoUrl
+            : logoFileId === null
+              ? null
+              : await this.uploads.consume(db, user, logoFileId, 'theme_logo');
+        theme = { ...colors, logoUrl };
       }
+      const photoUrl =
+        body.photoFileId === undefined
+          ? current.photoUrl
+          : body.photoFileId === null
+            ? null
+            : await this.uploads.consume(db, user, body.photoFileId, 'profile_photo');
       await db.query(
         `update app.profiles set
             owner_user_id = $3, display_name = $4, title = $5, company_name = $6, bio = $7,
@@ -230,7 +242,7 @@ export class ProfilesController {
           body.title === undefined ? current.title : emptyToNull(body.title),
           body.company === undefined ? current.company : emptyToNull(body.company),
           body.bio === undefined ? current.bio : emptyToNull(body.bio),
-          body.photoFileId === null ? null : current.photoUrl,
+          photoUrl,
           JSON.stringify(body.visibility ?? current.visibility),
           JSON.stringify(body.contacts ?? current.contacts),
           JSON.stringify(body.socialLinks ?? current.socialLinks),

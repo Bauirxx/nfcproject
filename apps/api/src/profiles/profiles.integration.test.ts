@@ -10,6 +10,7 @@ import { loadEnv } from '../config/env';
 import { DatabaseService } from '../database/database.service';
 import { PublicCardService } from '../public/public-card.service';
 import { ProfilesController } from './profiles.controller';
+import type { UploadsService } from '../uploads/uploads.service';
 
 const enabled = process.env.DB_INTEGRATION === '1';
 if (enabled) {
@@ -29,7 +30,11 @@ const req = (user: SessionUser) => ({ user }) as unknown as AuthedRequest;
 
 describe.runIf(enabled)('Perfis (base de dados real)', () => {
   const database = new DatabaseService(loadEnv({ ...process.env, NODE_ENV: 'test' }));
-  const profiles = new ProfilesController(database, { record: async () => undefined } as unknown as AuditService);
+  const profiles = new ProfilesController(
+    database,
+    { record: async () => undefined } as unknown as AuditService,
+    {} as unknown as UploadsService,
+  );
   const publicCards = new PublicCardService(database);
   const admin = { companyId: null, isPlatformAdmin: true };
   let profileId = '';

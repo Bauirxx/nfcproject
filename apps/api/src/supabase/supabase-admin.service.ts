@@ -26,8 +26,8 @@ export class SupabaseAdminService {
     return this.client !== null;
   }
 
-  private admin(): SupabaseClient {
-    if (!this.client) throw new ServiceUnavailableException({ error: { code: 'invites_unavailable' } });
+  private admin(code = 'invites_unavailable'): SupabaseClient {
+    if (!this.client) throw new ServiceUnavailableException({ error: { code } });
     return this.client;
   }
 
@@ -57,6 +57,23 @@ export class SupabaseAdminService {
       this.logger.error(`Atualização do papel falhou: ${error.message}`);
       throw new ServiceUnavailableException({ error: { code: 'invites_unavailable' } });
     }
+  }
+
+  // Storage (regra 8): só o backend escreve; os buckets não têm políticas para anon/authenticated.
+
+  /** Grava um objeto (sem substituir um existente: os nomes são gerados pelo sistema). */
+  async putObject(bucket: string, path: string, bytes: Uint8Array, contentType: string): Promise<void> {
+    const { error } = await this.admin('uploads_unavailable').storage.from(bucket).upload(path, bytes, { contentType, upsert: false });
+    if (error) {
+      this.logger.error(`Storage: falha a gravar em ${bucket}: ${error.message}`);
+      throw new ServiceUnavailableException({ error: { code: 'uploads_unavailable' } });
+    }
+  }
+
+  /** Apaga objetos (por exemplo, o original da quarentena depois do processamento). Falhas só ficam no log. */
+  async removeObjects(bucket: string, paths: string[]): Promise<void> {
+    const { error } = await this.admin('uploads_unavailable').storage.from(bucket).remove(paths);
+    if (error) this.logger.warn(`Storage: falha a apagar de ${bucket}: ${error.message}`);
   }
 
   /** Remove a conta (as sessões terminam; `app.users` é apagado em cascata). */

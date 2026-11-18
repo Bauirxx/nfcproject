@@ -9,6 +9,7 @@ import { DatabaseService } from '../database/database.service';
 import { AuditController } from '../audit/audit.controller';
 import { CompaniesController } from '../companies/companies.controller';
 import type { MembersService } from '../members/members.service';
+import type { UploadsService } from '../uploads/uploads.service';
 import type { AuditService } from '../audit/audit.service';
 import { AnalyticsService, REPORT_TIME_ZONE } from './analytics.service';
 
@@ -35,6 +36,7 @@ describe.runIf(enabled)('Painel (base de dados real)', () => {
     database,
     { record: async () => undefined } as unknown as AuditService,
     {} as unknown as MembersService,
+    {} as unknown as UploadsService,
   );
   const admin = { companyId: null, isPlatformAdmin: true };
   let today = '';

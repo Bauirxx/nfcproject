@@ -2,9 +2,11 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { NextFunction, Request, Response } from 'express';
+import express from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { loadEnv } from './config/env';
+import { LIMITS } from '@nfc-business/shared/constants';
 
 /** Arranque do backend. A configuração é validada primeiro; cabeçalhos de segurança e CORS fechado (CLAUDE.md, regra 9). */
 async function bootstrap(): Promise<void> {
@@ -31,6 +33,16 @@ async function bootstrap(): Promise<void> {
   app.getHttpAdapter().getInstance().disable('x-powered-by');
   // IP real do visitante atrás do Vercel e do Render (limites e hash dos IPs). Só confia no número de saltos configurado.
   app.set('trust proxy', env.TRUST_PROXY_HOPS);
+
+  // Corpo binário só para a receção de imagens (regra 8): até 2 MB e só os tipos aceites. Erros saem em JSON.
+  const rawImages = express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: LIMITS.uploadMaxBytes + 1 });
+  app.use('/api/uploads', (request: Request, response: Response, next: NextFunction) => {
+    rawImages(request, response, (error?: unknown) => {
+      if (!error) return next();
+      const tooLarge = (error as { type?: string }).type === 'entity.too.large';
+      response.status(tooLarge ? 413 : 400).json({ error: { code: tooLarge ? 'file_too_large' : 'invalid_request' } });
+    });
+  });
 
   app.setGlobalPrefix('api');
   app.enableShutdownHooks();
