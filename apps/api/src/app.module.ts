@@ -7,10 +7,11 @@ import { CoreModule } from './common/core.module';
 import { CsrfGuard } from './common/csrf';
 import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
+import { PanelModule } from './panel.module';
 import { PublicModule } from './public/public.module';
 
 @Module({
-  imports: [ConfigModule, CoreModule, HealthModule, AuthModule, PublicModule],
+  imports: [ConfigModule, CoreModule, HealthModule, AuthModule, PublicModule, PanelModule],
   providers: [
     // CSRF primeiro (regra 7): Origin e X-CSRF-Token em todos os pedidos que alteram dados.
     { provide: APP_GUARD, useClass: CsrfGuard },
