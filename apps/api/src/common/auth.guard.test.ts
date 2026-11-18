@@ -1,8 +1,10 @@
-import { UnauthorizedException, type ExecutionContext } from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException, type ExecutionContext } from '@nestjs/common';
 import type { Reflector } from '@nestjs/core';
 import { describe, expect, it } from 'vitest';
 import { AuthGuard } from './auth.guard';
-import type { SessionService, SessionUser } from './session.service';
+import { ALLOW_WITHOUT_MFA_KEY } from './mfa.decorator';
+import { IS_PUBLIC_KEY } from './public.decorator';
+import type { ResolvedSession, SessionService } from './session.service';
 
 function makeContext(request: Record<string, unknown> = {}): ExecutionContext {
   return {
@@ -12,29 +14,67 @@ function makeContext(request: Record<string, unknown> = {}): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
-const reflectorWith = (isPublic: boolean): Reflector =>
-  ({ getAllAndOverride: () => isPublic }) as unknown as Reflector;
+const reflectorWith = (flags: { isPublic?: boolean; allowWithoutMfa?: boolean } = {}): Reflector =>
+  ({
+    getAllAndOverride: (key: string) =>
+      key === IS_PUBLIC_KEY ? Boolean(flags.isPublic) : key === ALLOW_WITHOUT_MFA_KEY ? Boolean(flags.allowWithoutMfa) : false,
+  }) as unknown as Reflector;
 
-const sessionsWith = (user: SessionUser | null): SessionService =>
-  ({ getUser: async () => user }) as unknown as SessionService;
+const sessionsWith = (session: ResolvedSession | null): SessionService =>
+  ({ resolve: async () => session }) as unknown as SessionService;
 
-const user: SessionUser = { id: 'u1', email: 'a@b.test', role: 'company_admin', companyId: 'c1' };
+function session(overrides: Partial<ResolvedSession> = {}): ResolvedSession {
+  return {
+    user: {
+      id: 'u1',
+      name: 'Edu',
+      email: 'a@b.test',
+      role: 'company_editor',
+      companyId: 'c1',
+      companyName: 'ACME',
+      mfaEnabled: false,
+      mfaRequired: false,
+    },
+    aal: 'aal1',
+    mfaPending: false,
+    mfaSetupRequired: false,
+    ...overrides,
+  };
+}
 
 describe('AuthGuard', () => {
   it('deixa passar rotas públicas sem sessão', async () => {
-    const guard = new AuthGuard(reflectorWith(true), sessionsWith(null));
+    const guard = new AuthGuard(reflectorWith({ isPublic: true }), sessionsWith(null));
     await expect(guard.canActivate(makeContext())).resolves.toBe(true);
   });
 
   it('recusa rotas protegidas sem sessão', async () => {
-    const guard = new AuthGuard(reflectorWith(false), sessionsWith(null));
+    const guard = new AuthGuard(reflectorWith(), sessionsWith(null));
     await expect(guard.canActivate(makeContext())).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
-  it('deixa passar rotas protegidas com sessão e anexa o utilizador ao pedido', async () => {
+  it('deixa passar com sessão e anexa o utilizador ao pedido', async () => {
     const request: Record<string, unknown> = {};
-    const guard = new AuthGuard(reflectorWith(false), sessionsWith(user));
+    const current = session();
+    const guard = new AuthGuard(reflectorWith(), sessionsWith(current));
     await expect(guard.canActivate(makeContext(request))).resolves.toBe(true);
-    expect(request.user).toEqual(user);
+    expect(request.user).toEqual(current.user);
+  });
+
+  it('segundo fator por verificar: 401 (não é uma sessão)', async () => {
+    const guard = new AuthGuard(reflectorWith(), sessionsWith(session({ mfaPending: true })));
+    await expect(guard.canActivate(makeContext())).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('administrador sem MFA: 403 mfa_setup_required, exceto nas rotas de configuração', async () => {
+    const pending = session({ mfaSetupRequired: true });
+    const blocked = new AuthGuard(reflectorWith(), sessionsWith(pending));
+    await expect(blocked.canActivate(makeContext())).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(blocked.canActivate(makeContext())).rejects.toMatchObject({
+      response: { error: { code: 'mfa_setup_required' } },
+    });
+
+    const setupRoute = new AuthGuard(reflectorWith({ allowWithoutMfa: true }), sessionsWith(pending));
+    await expect(setupRoute.canActivate(makeContext())).resolves.toBe(true);
   });
 });

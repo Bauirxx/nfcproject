@@ -247,7 +247,7 @@ describe('apiFetch — erros', () => {
 
 describe('loadSession', () => {
   it('devolve o utilizador e guarda o token CSRF em memória', async () => {
-    const user = { id: 'u1', name: 'Ana', email: 'ana@acme.test', role: 'company_admin' };
+    const user = { id: 'u1', name: 'Ana', email: 'ana@acme.test', role: 'company_admin', companyId: 'co_acme', companyName: 'ACME', mfaEnabled: true, mfaRequired: true };
     routes['GET /api/auth/session'] = () => json(200, { user, csrfToken: 'token-csrf-0000000001' });
 
     await expect(loadSession()).resolves.toEqual(user);
@@ -262,7 +262,7 @@ describe('loadSession', () => {
   });
 
   it('renova a sessão quando o access token expirou mas há refresh token', async () => {
-    const user = { id: 'u1', name: 'Ana', email: 'ana@acme.test', role: 'profile_owner' };
+    const user = { id: 'u1', name: 'Ana', email: 'ana@acme.test', role: 'profile_owner', companyId: 'co_acme', companyName: 'ACME', mfaEnabled: false, mfaRequired: false };
     let renewed = false;
     routes['GET /api/auth/session'] = () =>
       renewed
@@ -276,5 +276,15 @@ describe('loadSession', () => {
     await expect(loadSession()).resolves.toEqual(user);
     expect(callsTo('POST /api/auth/refresh')).toHaveLength(1);
     expect(getCsrfToken()).toBe('token-novo-0000000002');
+  });
+
+  it('um utilizador fora do contrato não é uma sessão (falha fechada)', async () => {
+    const incomplete = { id: 'u1', email: 'ana@acme.test', role: 'platform_admin', companyId: null };
+    routes['GET /api/auth/session'] = () => json(200, { user: incomplete, csrfToken: 'token-csrf-0000000001' });
+    await expect(loadSession()).resolves.toBeNull();
+
+    const badRole = { id: 'u1', name: 'Ana', email: 'a@b.test', role: 'root', companyId: null, companyName: null, mfaEnabled: true, mfaRequired: true };
+    routes['GET /api/auth/session'] = () => json(200, { user: badRole, csrfToken: 'token-csrf-0000000001' });
+    await expect(loadSession()).resolves.toBeNull();
   });
 });
