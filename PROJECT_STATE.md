@@ -61,7 +61,7 @@ O que mais existe e está verificado:
 
 | Tarefa | Estado | Notas |
 | --- | --- | --- |
-| T-FE-01 Base do projeto | Em revisão | `main.tsx` feito; faltam `playwright.config.ts` (T-FE-27) e `scripts/check-bundle-size.mjs` (T-FE-28) |
+| T-FE-01 Base do projeto | Em revisão | `main.tsx` e `scripts/check-bundle-size.mjs` feitos; falta `playwright.config.ts` (T-FE-27) |
 | T-FE-03 Cliente da API | Em revisão | Código, testes e ADR-0005 prontos; `lib/parsed-api.ts` ganha teste com o primeiro consumidor (T-FE-06) |
 | T-FE-04 API simulada (MSW) | Em revisão | Código, testes, ADR-0009 e grafo prontos; `main.tsx` chama `startMockApi`; falta confirmar o worker no browser real (ao abrir `pnpm dev`) |
 | T-BE-01 Fundação do backend | Em desenvolvimento | Estrutura, segurança, guard global, filtro de erros, env e health feitos (10 testes) |
@@ -98,6 +98,7 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 ## Alterações recentes
 
+- 2026-11-18: T-FE-28 — `apps/web/scripts/check-bundle-size.mjs` (`pnpm --filter @nfc-business/web check:bundle`): soma o JavaScript inicial do `index.html` de produção em gzip e falha acima de 100 KB. Resultado atual: 77,0 KB.
 - 2026-11-18: T-FE-23 temas — `features/themes/themes-page.tsx` (escolher o perfil e editar o tema com o `ThemeEditor` existente; sem requisitos novos), `shared/i18n/panel/themes.ts`, rota `/painel/temas` ligada. Removido `app/placeholder-page.tsx` (já nenhum ecrã é provisório). 3 testes (409). **Todos os ecrãs do frontend (T-FE-05 a T-FE-25) estão feitos.**
 - 2026-11-18: T-FE-25 conta — `features/account/{queries,account-page}.tsx`, `shared/i18n/panel/account.ts`, rota `/painel/conta` ligada: dados pessoais, palavra-passe, estado do MFA (ativar/desativar conforme o papel) e sessões ativas com «terminar todas». 5 testes (406 no total).
 - 2026-11-13: **T-FE-24 Auditoria concluída** — `features/audit/{queries,audit-page}.tsx`, `shared/i18n/panel/audit.ts` (`auditActionLabels`, `auditTexts`), rota `/painel/auditoria` ligada (substitui o `PlaceholderPage`). Tabela paginada com filtros por ação, autor (debounce) e datas sobre `GET /api/audit`. +4 testes → 401 (82 shared + 295 web + 24 api). `typecheck` 0, `lint` 0. Grafo e requisitos atualizados.

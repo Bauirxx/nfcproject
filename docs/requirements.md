@@ -139,7 +139,7 @@ Estados das tarefas: Não iniciada, Planeada, Em desenvolvimento, Em revisão, E
 | T-FE-25 | Conta | 8 | RF-FE-20 | Concluída |
 | T-FE-26 | Suite de testes de componentes e acessibilidade | 9 | RNF-FE-03, RNF-FE-09 | Planeada |
 | T-FE-27 | Playwright: cinco fluxos, CSP e 360 px | 9 | RNF-FE-01, RNF-FE-06, RNF-FE-09 | Planeada |
-| T-FE-28 | Verificação do orçamento de JavaScript | 9 | RNF-FE-02 | Planeada |
+| T-FE-28 | Verificação do orçamento de JavaScript | 9 | RNF-FE-02 | Concluída |
 
 ## Requisitos do backend
 
