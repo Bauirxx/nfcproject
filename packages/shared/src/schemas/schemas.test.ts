@@ -15,7 +15,6 @@ import {
   profileSocialLinkSchema,
   profileThemeInputSchema,
   publicEventRequestSchema,
-  recoveryCodeSchema,
   sessionResponseSchema,
   uploadSignRequestSchema,
   uploadSignResponseSchema,
@@ -73,13 +72,11 @@ describe('schemas de autenticação', () => {
     expect(loginResponseSchema.safeParse({ status: 'other' }).success).toBe(false);
   });
 
-  it('a verificação de MFA aceita código TOTP ou código de recuperação', () => {
+  it('a verificação de MFA só aceita o código TOTP de 6 dígitos (sem códigos de recuperação, ADR-0016)', () => {
     expect(mfaVerifyRequestSchema.safeParse({ code: '123456' }).success).toBe(true);
-    expect(mfaVerifyRequestSchema.safeParse({ recoveryCode: 'ABCDE-23456' }).success).toBe(true);
+    expect(mfaVerifyRequestSchema.safeParse({ recoveryCode: 'ABCDE-23456' }).success).toBe(false);
     expect(mfaVerifyRequestSchema.safeParse({ code: '12345' }).success).toBe(false);
     expect(mfaVerifyRequestSchema.safeParse({ code: '12345a' }).success).toBe(false);
-    expect(recoveryCodeSchema.parse(' abcde-23456 ')).toBe('ABCDE-23456');
-    expect(issueCodes(recoveryCodeSchema, 'ABCDE23456')).toEqual(['invalid_recovery_code']);
   });
 
   it('aceitar convite exige nome e palavra-passe forte', () => {

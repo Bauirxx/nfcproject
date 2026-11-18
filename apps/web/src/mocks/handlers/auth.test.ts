@@ -1,6 +1,6 @@
 import type { AuthSessionList, LoginResponse, SessionResponse, SessionUser } from '@nfc-business/shared/schemas';
 import { describe, expect, it } from 'vitest';
-import { MOCK_RECOVERY_CODES, MOCK_TOKENS, MOCK_USERS } from '../credentials';
+import { MOCK_TOKENS, MOCK_USERS } from '../credentials';
 import { getDb } from '../db';
 import { generateTotp } from '../totp';
 import { authHandlers } from './auth';
@@ -158,18 +158,6 @@ describe('POST /api/auth/mfa/verify', () => {
     expect(recentAuditActions()).toContain('auth.login_failed');
   });
 
-  it('aceita um código de recuperação uma única vez', async () => {
-    await startChallenge();
-    const recoveryCode = MOCK_RECOVERY_CODES.companyAdmin;
-    expect((await api('POST', '/api/auth/mfa/verify', { recoveryCode: recoveryCode.toLowerCase() })).status).toBe(200);
-
-    await api('POST', '/api/auth/logout');
-    await startChallenge();
-    const reused = await api('POST', '/api/auth/mfa/verify', { recoveryCode });
-    expect(reused.status).toBe(401);
-    expect(await errorCode(reused)).toBe('invalid_code');
-  });
-
   it('limita as tentativas do segundo passo', async () => {
     await startChallenge();
     for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -179,9 +167,9 @@ describe('POST /api/auth/mfa/verify', () => {
     expect((await api('POST', '/api/auth/mfa/verify', { code })).status).toBe(429);
   });
 
-  it('não aceita código e código de recuperação no mesmo pedido', async () => {
+  it('não aceita códigos de recuperação (ADR-0016)', async () => {
     await startChallenge();
-    const response = await api('POST', '/api/auth/mfa/verify', { code: '123456', recoveryCode: 'ABCDE-23456' });
+    const response = await api('POST', '/api/auth/mfa/verify', { recoveryCode: 'ABCDE-23456' });
     expect(response.status).toBe(422);
   });
 });
@@ -206,19 +194,18 @@ describe('POST /api/auth/logout', () => {
 });
 
 describe('configuração de MFA', () => {
-  async function enableMfa(): Promise<string[]> {
+  async function enableMfa(): Promise<void> {
     const setup = await api('POST', '/api/auth/mfa/setup');
     const { secret } = await readJson<{ secret: string }>(setup);
     const confirm = await api('POST', '/api/auth/mfa/confirm', { code: await generateTotp(secret) });
     expect(confirm.status).toBe(200);
-    return (await readJson<{ recoveryCodes: string[] }>(confirm)).recoveryCodes;
   }
 
   it('exige sessão', async () => {
     expect((await api('POST', '/api/auth/mfa/setup')).status).toBe(401);
   });
 
-  it('gera a chave, confirma com um código e devolve códigos de recuperação uma única vez', async () => {
+  it('gera a chave, confirma com um código e devolve o utilizador com MFA ativo', async () => {
     signIn('u_nelson');
     const setup = await api('POST', '/api/auth/mfa/setup');
     expect(setup.status).toBe(200);
@@ -234,9 +221,8 @@ describe('configuração de MFA', () => {
     expect(await errorCode(wrong)).toBe('invalid_code');
 
     const confirm = await api('POST', '/api/auth/mfa/confirm', { code: await generateTotp(body.secret) });
-    const { recoveryCodes } = await readJson<{ recoveryCodes: string[] }>(confirm);
-    expect(recoveryCodes).toHaveLength(8);
-    for (const code of recoveryCodes) expect(code).toMatch(/^[A-Z2-7]{5}-[A-Z2-7]{5}$/);
+    const confirmed = await readJson<{ user: { mfaEnabled: boolean } }>(confirm);
+    expect(confirmed.user.mfaEnabled).toBe(true);
     expect((await session()).user?.mfaEnabled).toBe(true);
     expect(recentAuditActions()).toContain('auth.mfa_enabled');
 

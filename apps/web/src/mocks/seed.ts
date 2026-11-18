@@ -9,7 +9,7 @@ import {
   type ShareChannel,
 } from '@nfc-business/shared/constants';
 import { maskEmail, maskPhone } from '@nfc-business/shared/links';
-import { MOCK_RECOVERY_CODES, MOCK_TOKENS, MOCK_USERS } from './credentials';
+import { MOCK_TOKENS, MOCK_USERS } from './credentials';
 import type { DbAuditEntry, DbCard, DbCardHistoryEntry, DbProfile, DbShare, DbUser, MockDb } from './db';
 
 /** Muda sempre que a forma dos dados muda: os dados guardados com outra versão são substituídos. */
@@ -48,7 +48,6 @@ function activeUser(
   role: Role,
   companyId: string | null,
   createdAt: string,
-  recoveryCodes: string[] = [],
 ): DbUser {
   return {
     id,
@@ -60,7 +59,6 @@ function activeUser(
     status: 'active',
     totpSecret: credentials.totpSecret,
     pendingTotpSecret: null,
-    recoveryCodes,
     createdAt,
   };
 }
@@ -75,14 +73,8 @@ export function createSeed(now: number): MockDb {
   };
 
   const users: DbUser[] = [
-    activeUser('u_marta', 'Marta Nhaca', MOCK_USERS.platformAdmin, 'platform_admin', null, ago(400), [
-      MOCK_RECOVERY_CODES.platformAdmin,
-      'NFCBP-A2B3C',
-    ]),
-    activeUser('u_ana', 'Ana Macuácua', MOCK_USERS.companyAdmin, 'company_admin', ACME, ago(380), [
-      MOCK_RECOVERY_CODES.companyAdmin,
-      'NFCBA-D4E5F',
-    ]),
+    activeUser('u_marta', 'Marta Nhaca', MOCK_USERS.platformAdmin, 'platform_admin', null, ago(400)),
+    activeUser('u_ana', 'Ana Macuácua', MOCK_USERS.companyAdmin, 'company_admin', ACME, ago(380)),
     activeUser('u_edu', 'Eduardo Sitoe', MOCK_USERS.editor, 'company_editor', ACME, ago(300)),
     activeUser('u_paula', 'Paula Machava', MOCK_USERS.owner, 'profile_owner', ACME, ago(260)),
     activeUser(
@@ -103,7 +95,6 @@ export function createSeed(now: number): MockDb {
       status: 'invited',
       totpSecret: null,
       pendingTotpSecret: null,
-      recoveryCodes: [],
       createdAt: ago(2),
     },
     activeUser('u_nelson', 'Nelson Tembe', MOCK_USERS.newAdmin, 'company_admin', BETA, ago(24)),

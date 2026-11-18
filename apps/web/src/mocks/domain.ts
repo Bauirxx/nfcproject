@@ -149,7 +149,6 @@ export function inviteUser(db: MockDb, email: string, role: MemberRole, companyI
     status: 'invited',
     totpSecret: null,
     pendingTotpSecret: null,
-    recoveryCodes: [],
     createdAt: isoNow(),
   };
   db.users.push(user);

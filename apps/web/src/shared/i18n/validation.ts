@@ -13,7 +13,6 @@ const messages: Record<string, string> = {
   invalid_social_url: 'O link tem de começar por https:// e pertencer à rede social escolhida.',
   invalid_color: 'Escolha uma cor no formato #RRGGBB.',
   invalid_code: 'O código tem 6 dígitos.',
-  invalid_recovery_code: 'O código de recuperação tem o formato XXXXX-XXXXX.',
   password_too_short: `A palavra-passe tem de ter pelo menos ${LIMITS.passwordMin} caracteres.`,
   password_too_long: `A palavra-passe pode ter até ${LIMITS.passwordMax} caracteres.`,
   password_mismatch: 'As duas palavras-passe não são iguais.',

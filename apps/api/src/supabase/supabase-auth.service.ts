@@ -66,7 +66,7 @@ export interface SignInResult {
 export class SupabaseAuthService {
   private readonly client: SupabaseClient | null;
 
-  constructor(@Inject(ENV) env: Env) {
+  constructor(@Inject(ENV) private readonly env: Env) {
     this.client =
       env.SUPABASE_URL && env.SUPABASE_ANON_KEY
         ? createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
@@ -97,4 +97,105 @@ export class SupabaseAuthService {
     if (!identity) return null;
     return { accessToken: data.session.access_token, refreshToken: data.session.refresh_token, identity };
   }
+
+  // MFA (TOTP) do Supabase, sempre no contexto da sessão do próprio utilizador (nunca com service_role).
+
+  /** Cliente isolado com a sessão do utilizador (tokens dos cookies). Pode renovar os tokens. */
+  private async userClient(tokens: SessionTokens): Promise<{ client: SupabaseClient; tokens: SessionTokens } | null> {
+    if (!this.env.SUPABASE_URL || !this.env.SUPABASE_ANON_KEY) return null;
+    const client = createClient(this.env.SUPABASE_URL, this.env.SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await client.auth.setSession({
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+    });
+    if (error || !data.session) return null;
+    return {
+      client,
+      tokens: { accessToken: data.session.access_token, refreshToken: data.session.refresh_token },
+    };
+  }
+
+  /**
+   * Inicia a configuração do TOTP: remove fatores TOTP por confirmar (tentativas anteriores) e cria um novo.
+   * Devolve o segredo e o URI otpauth para a app de autenticação.
+   */
+  async enrollTotp(tokens: SessionTokens): Promise<{ secret: string; otpauthUrl: string } | null> {
+    const session = await this.userClient(tokens);
+    if (!session) return null;
+    const { client } = session;
+    const factors = await client.auth.mfa.listFactors();
+    if (factors.error) return null;
+    for (const factor of factors.data.all) {
+      if (factor.factor_type === 'totp' && factor.status !== 'verified') {
+        await client.auth.mfa.unenroll({ factorId: factor.id });
+      }
+    }
+    const { data, error } = await client.auth.mfa.enroll({
+      factorType: 'totp',
+      friendlyName: `NFC Business ${Date.now()}`,
+    });
+    if (error || data.type !== 'totp') return null;
+    return { secret: data.totp.secret, otpauthUrl: data.totp.uri };
+  }
+
+  /**
+   * Verifica um código TOTP. `pending` confirma o fator por verificar (configuração); `verified` faz o segundo
+   * passo do login. Em sucesso, a sessão sobe a aal2 e devolve os tokens novos e a identidade atualizada.
+   */
+  async verifyTotp(
+    tokens: SessionTokens,
+    code: string,
+    which: 'pending' | 'verified',
+  ): Promise<SignInResult | null> {
+    const session = await this.userClient(tokens);
+    if (!session) return null;
+    const { client } = session;
+    const factors = await client.auth.mfa.listFactors();
+    if (factors.error) return null;
+    const factor = factors.data.all.find(
+      (candidate) =>
+        candidate.factor_type === 'totp' &&
+        (which === 'verified' ? candidate.status === 'verified' : candidate.status !== 'verified'),
+    );
+    if (!factor) return null;
+    const { data, error } = await client.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
+    if (error || !data) return null;
+    const user = await client.auth.getUser(data.access_token);
+    const identity = user.data.user ? mapSupabaseUser(user.data.user) : null;
+    if (!identity) return null;
+    return { accessToken: data.access_token, refreshToken: data.refresh_token, identity };
+  }
+
+  /** Remove o fator TOTP verificado (exige uma sessão aal2, que o Supabase confirma). */
+  async unenrollTotp(tokens: SessionTokens): Promise<boolean> {
+    const session = await this.userClient(tokens);
+    if (!session) return false;
+    const { client } = session;
+    const factors = await client.auth.mfa.listFactors();
+    if (factors.error) return false;
+    for (const factor of factors.data.all) {
+      if (factor.factor_type !== 'totp') continue;
+      const { error } = await client.auth.mfa.unenroll({ factorId: factor.id });
+      if (error) return false;
+    }
+    return true;
+  }
+
+  /** Confirma a palavra-passe num cliente à parte, sem tocar na sessão atual (desativar o MFA). */
+  async checkPassword(email: string, password: string): Promise<boolean> {
+    if (!this.env.SUPABASE_URL || !this.env.SUPABASE_ANON_KEY) return false;
+    const client = createClient(this.env.SUPABASE_URL, this.env.SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await client.auth.signInWithPassword({ email, password });
+    if (!error) await client.auth.signOut({ scope: 'local' });
+    return !error;
+  }
+}
+
+export interface SessionTokens {
+  accessToken: string;
+  refreshToken: string;
 }

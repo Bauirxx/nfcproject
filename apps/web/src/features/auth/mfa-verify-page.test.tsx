@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { MOCK_RECOVERY_CODES, MOCK_USERS } from '@/mocks/credentials';
+import { MOCK_USERS } from '@/mocks/credentials';
 import { generateTotp } from '@/mocks/totp';
 import { renderApp } from '@/test/utils';
 
@@ -36,13 +36,9 @@ describe('MfaVerifyPage', () => {
     expect(await screen.findByText(/código não está correto/i)).toBeInTheDocument();
   });
 
-  it('aceita um código de recuperação', async () => {
-    const user = await loginWithMfa();
-
-    await user.click(screen.getByRole('button', { name: 'Usar um código de recuperação' }));
-    await user.type(screen.getByLabelText('Código de recuperação'), MOCK_RECOVERY_CODES.companyAdmin);
-    await user.click(screen.getByRole('button', { name: 'Verificar' }));
-
-    expect(await screen.findByRole('heading', { level: 1, name: 'Painel' })).toBeInTheDocument();
+  it('sem códigos de recuperação: indica como repor o MFA com um administrador', async () => {
+    await loginWithMfa();
+    expect(screen.queryByRole('button', { name: /recuperação/i })).toBeNull();
+    expect(screen.getByText(/Peça a um administrador que reponha/)).toBeInTheDocument();
   });
 });

@@ -31,7 +31,6 @@ export interface DbUser {
   totpSecret: string | null;
   /** Chave gerada em `mfa/setup`, ainda por confirmar. */
   pendingTotpSecret: string | null;
-  recoveryCodes: string[];
   createdAt: string;
 }
 

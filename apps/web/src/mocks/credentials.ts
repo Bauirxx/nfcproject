@@ -13,12 +13,6 @@ export const MOCK_USERS = {
 
 export type MockUserKey = keyof typeof MOCK_USERS;
 
-/** Um código de recuperação de uso único por conta com verificação em dois passos. */
-export const MOCK_RECOVERY_CODES = {
-  platformAdmin: 'NFCBP-M3T5W',
-  companyAdmin: 'NFCBA-K7Q2M',
-} as const;
-
 export const MOCK_TOKENS = {
   /** Cartão ativo da Paula: página pública em /c/<token>. */
   activeCard: 'Zk3vQ9xLr2TnB7wYc1HdMg',

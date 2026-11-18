@@ -37,8 +37,6 @@ const ATTEMPTS_MAX = 5;
 const ATTEMPTS_WINDOW_MS = 60_000;
 /** Link de recuperação válido durante 1 hora (CLAUDE.md, regra 1). */
 const RESET_TOKEN_TTL_MS = 3_600_000;
-const RECOVERY_CODE_COUNT = 8;
-const RECOVERY_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 const TOTP_ISSUER = 'NFC Business';
 
 function currentSession(db: MockDb): DbSession | null {
@@ -81,24 +79,6 @@ function userOfOneTimeToken(
   return user ?? fail(400, 'invalid_token');
 }
 
-function randomRecoveryCode(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(10));
-  let code = '';
-  bytes.forEach((byte, index) => {
-    if (index === 5) code += '-';
-    code += RECOVERY_ALPHABET.charAt(byte % RECOVERY_ALPHABET.length);
-  });
-  return code;
-}
-
-/** Código de recuperação de uso único: é removido ao ser aceite. */
-function consumeRecoveryCode(user: DbUser, code: string): boolean {
-  const index = user.recoveryCodes.indexOf(code);
-  if (index < 0) return false;
-  user.recoveryCodes.splice(index, 1);
-  return true;
-}
-
 function otpauthUrl(email: string, secret: string): string {
   const issuer = encodeURIComponent(TOTP_ISSUER);
   return `otpauth://totp/${issuer}:${encodeURIComponent(email)}?secret=${secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`;
@@ -133,14 +113,13 @@ export const authHandlers: HttpHandler[] = [
   }),
 
   route('post', '/api/auth/mfa/verify', async ({ db, request }) => {
-    const body = await readBody(request, mfaVerifyRequestSchema);
+    const { code } = await readBody(request, mfaVerifyRequestSchema);
     const pendingId = db.cookies.mfaPendingUserId;
     const user = pendingId === null ? null : activeUserById(db, pendingId);
     const secret = user?.totpSecret ?? null;
     if (!user || secret === null) fail(401, 'mfa_challenge_expired');
     limitAttempts(db, `mfa:${user.id}`);
-    const valid = 'code' in body ? await verifyTotp(secret, body.code) : consumeRecoveryCode(user, body.recoveryCode);
-    if (!valid) {
+    if (!(await verifyTotp(secret, code))) {
       recordAudit(db, user, 'auth.login_failed');
       fail(401, 'invalid_code');
     }
@@ -185,10 +164,9 @@ export const authHandlers: HttpHandler[] = [
     if (!(await verifyTotp(pending, code))) fail(422, 'invalid_code');
     user.totpSecret = pending;
     user.pendingTotpSecret = null;
-    user.recoveryCodes = Array.from({ length: RECOVERY_CODE_COUNT }, randomRecoveryCode);
     recordAudit(db, user, 'auth.mfa_enabled');
-    // Os códigos são mostrados uma única vez: a API nunca os volta a devolver.
-    return json({ recoveryCodes: [...user.recoveryCodes] } satisfies MfaConfirmResponse);
+    // A sessão atual fica verificada (como a aal2 do Supabase): devolve o utilizador atualizado (ADR-0016).
+    return json({ user: toSessionUser(db, user) } satisfies MfaConfirmResponse);
   }),
 
   route('post', '/api/auth/mfa/disable', async ({ db, request }) => {
@@ -199,7 +177,6 @@ export const authHandlers: HttpHandler[] = [
     if (user.totpSecret === null) fail(409, 'mfa_not_enabled');
     user.totpSecret = null;
     user.pendingTotpSecret = null;
-    user.recoveryCodes = [];
     return noContent();
   }),
 

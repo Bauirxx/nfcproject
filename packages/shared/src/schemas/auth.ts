@@ -43,16 +43,11 @@ export const totpCodeSchema = z
   .trim()
   .regex(/^\d{6}$/, 'invalid_code');
 
-export const recoveryCodeSchema = z
-  .string()
-  .trim()
-  .toUpperCase()
-  .regex(/^[A-Z2-7]{5}-[A-Z2-7]{5}$/, 'invalid_recovery_code');
-
-export const mfaVerifyRequestSchema = z.union([
-  z.object({ code: totpCodeSchema }),
-  z.object({ recoveryCode: recoveryCodeSchema }),
-]);
+/**
+ * Segundo passo do login: só o código TOTP. Não há códigos de recuperação na v1 (ADR-0016): quem perde a
+ * aplicação de autenticação pede a reposição do MFA a um administrador.
+ */
+export const mfaVerifyRequestSchema = z.object({ code: totpCodeSchema });
 export type MfaVerifyRequest = z.infer<typeof mfaVerifyRequestSchema>;
 
 export const mfaVerifyResponseSchema = z.object({ user: sessionUserSchema });
@@ -67,7 +62,8 @@ export type MfaSetupResponse = z.infer<typeof mfaSetupResponseSchema>;
 export const mfaConfirmRequestSchema = z.object({ code: totpCodeSchema });
 export type MfaConfirmRequest = z.infer<typeof mfaConfirmRequestSchema>;
 
-export const mfaConfirmResponseSchema = z.object({ recoveryCodes: z.array(z.string()).min(1) });
+/** Confirmar o MFA conclui a configuração e eleva a sessão (aal2): devolve o utilizador atualizado. */
+export const mfaConfirmResponseSchema = z.object({ user: sessionUserSchema });
 export type MfaConfirmResponse = z.infer<typeof mfaConfirmResponseSchema>;
 
 export const mfaDisableRequestSchema = z.object({ password: z.string().min(1, 'required').max(128, 'too_long') });

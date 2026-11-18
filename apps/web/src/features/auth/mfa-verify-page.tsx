@@ -14,37 +14,26 @@ import { apiParsed } from '@/shared/lib/parsed-api';
 import { AuthLayout } from './auth-layout';
 import { redirectTarget, type FromState } from './from-state';
 
-type Mode = 'totp' | 'recovery';
-
 export function MfaVerifyPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const [mode, setMode] = useState<Mode>('totp');
   const [value, setValue] = useState('');
 
   const verify = useMutation({
     meta: { inlineError: true },
-    mutationFn: () => {
-      const trimmed = value.trim();
-      const body = mode === 'totp' ? { code: trimmed } : { recoveryCode: trimmed.toUpperCase() };
-      return apiParsed(mfaVerifyResponseSchema, endpoints.auth.mfaVerify, { method: 'POST', body });
-    },
+    mutationFn: () =>
+      apiParsed(mfaVerifyResponseSchema, endpoints.auth.mfaVerify, { method: 'POST', body: { code: value.trim() } }),
     onSuccess: (data) => {
       queryClient.setQueryData(sessionQueryKey, data.user);
       navigate(redirectTarget(location.state as FromState), { replace: true });
     },
   });
 
-  function switchMode(next: Mode) {
-    setMode(next);
-    setValue('');
-  }
-
   return (
     <AuthLayout
       title={authTexts.mfaVerify.title}
-      subtitle={mode === 'totp' ? authTexts.mfaVerify.subtitle : authTexts.mfaVerify.recoveryHint}
+      subtitle={authTexts.mfaVerify.subtitle}
     >
       <form
         noValidate
@@ -56,40 +45,23 @@ export function MfaVerifyPage() {
       >
         {verify.isError ? <Alert variant="error">{errorMessage(verify.error)}</Alert> : null}
 
-        {mode === 'totp' ? (
-          <TextField
-            label={authTexts.fields.code}
-            description={authTexts.mfaVerify.codeHint}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            required
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-          />
-        ) : (
-          <TextField
-            label={authTexts.fields.recoveryCode}
-            autoComplete="one-time-code"
-            autoCapitalize="characters"
-            required
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-          />
-        )}
+        <TextField
+          label={authTexts.fields.code}
+          description={authTexts.mfaVerify.codeHint}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          required
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+        />
 
         <Button type="submit" disabled={verify.isPending || value.trim() === ''}>
           {verify.isPending ? <Spinner className="size-4" /> : null}
           {authTexts.mfaVerify.submit}
         </Button>
 
-        <Button
-          type="button"
-          variant="link"
-          onClick={() => switchMode(mode === 'totp' ? 'recovery' : 'totp')}
-        >
-          {mode === 'totp' ? authTexts.mfaVerify.useRecovery : authTexts.mfaVerify.useTotp}
-        </Button>
+        <p className="text-sm text-muted-foreground">{authTexts.mfaVerify.lostDevice}</p>
 
         <Link to="/entrar" className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline">
           {authTexts.mfaVerify.back}

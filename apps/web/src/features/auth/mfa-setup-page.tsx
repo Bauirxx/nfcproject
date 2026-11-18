@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { mfaConfirmResponseSchema, mfaSetupResponseSchema, type SessionUser } from '@nfc-business/shared/schemas';
+import { mfaConfirmResponseSchema, mfaSetupResponseSchema } from '@nfc-business/shared/schemas';
 import { Copy } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -30,7 +30,6 @@ export function MfaSetupPage() {
   const queryClient = useQueryClient();
   const signOut = useSignOut();
   const [code, setCode] = useState('');
-  const [recoveryCodes, setRecoveryCodes] = useState<readonly string[] | null>(null);
 
   const setup = useQuery({
     queryKey: ['mfa-setup'],
@@ -42,36 +41,12 @@ export function MfaSetupPage() {
   const confirm = useMutation({
     meta: { inlineError: true },
     mutationFn: () => apiParsed(mfaConfirmResponseSchema, endpoints.auth.mfaConfirm, { method: 'POST', body: { code: code.trim() } }),
-    onSuccess: (data) => setRecoveryCodes(data.recoveryCodes),
+    // A conta passa a ter MFA e a sessão já está verificada: atualiza a sessão em cache e entra no painel.
+    onSuccess: (data) => {
+      queryClient.setQueryData(sessionQueryKey, data.user);
+      navigate('/painel', { replace: true });
+    },
   });
-
-  function finish() {
-    // A conta passa a ter MFA; atualiza a sessão em cache para o guard deixar entrar no painel.
-    queryClient.setQueryData<SessionUser | null>(sessionQueryKey, (current) =>
-      current ? { ...current, mfaEnabled: true } : current,
-    );
-    navigate('/painel', { replace: true });
-  }
-
-  if (recoveryCodes) {
-    return (
-      <AuthLayout title={authTexts.mfaSetup.recoveryTitle}>
-        <div className="flex flex-col gap-4">
-          <Alert variant="warning">{authTexts.mfaSetup.recoveryBody}</Alert>
-          <ul className="grid grid-cols-2 gap-2 rounded-md border bg-muted p-3 font-mono text-sm">
-            {recoveryCodes.map((recoveryCode) => (
-              <li key={recoveryCode}>{recoveryCode}</li>
-            ))}
-          </ul>
-          <Button variant="outline" onClick={() => copyToClipboard(recoveryCodes.join('\n'))}>
-            <Copy aria-hidden="true" />
-            {commonTexts.actions.copy}
-          </Button>
-          <Button onClick={finish}>{authTexts.mfaSetup.recoveryConfirm}</Button>
-        </div>
-      </AuthLayout>
-    );
-  }
 
   return (
     <AuthLayout title={authTexts.mfaSetup.title} subtitle={authTexts.mfaSetup.subtitle}>
@@ -132,6 +107,8 @@ export function MfaSetupPage() {
               {authTexts.mfaSetup.submit}
             </Button>
           </form>
+
+          <p className="text-sm text-muted-foreground">{authTexts.mfaSetup.lostDeviceNote}</p>
 
           <Button variant="link" onClick={() => signOut.mutate()}>
             {authTexts.mfaVerify.back}
