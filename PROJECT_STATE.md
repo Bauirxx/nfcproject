@@ -98,6 +98,8 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 ## Alterações recentes
 
+- 2026-11-18: O dono aplicou a migração 0003 e configurou `SUPABASE_SERVICE_ROLE_KEY` (tipo `sb_secret_`) no `.env` e no Render. Verificado: chave válida, buckets `uploads-quarantine` (privado) e `public-images` (público), `app.uploads` com RLS. `uploads.integration.test.ts` passa contra o Supabase real: WebP de 512 px sem EXIF servido pela URL pública, consumo único, SVG recusado.
+
 - 2026-11-18: **Uploads de imagens (ADR-0018).**
   - `POST /api/uploads/sign` e `PUT /api/uploads/:fileId`: magic bytes, 2 MB, tamanho exato, quarentena, sharp numa worker isolada (`env: {}`) e WebP sem EXIF no bucket público.
   - Os perfis (fotografia e logótipo do tema) e as empresas (logótipo) consomem o `fileId` uma única vez.
