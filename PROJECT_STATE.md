@@ -1,24 +1,38 @@
 # PROJECT_STATE — NFC Business
 
-Atualizado em 2026-11-13.
+Atualizado em 2026-11-19. **Para retomar noutro PC, comece pela secção «Registo de continuidade» no fim deste ficheiro.**
 
 ## Identificação
 
 - Produto: NFC Business, plataforma de cartões de visita digitais por NFC e QR Code.
-- Repositório: https://github.com/Bauirxx/nfcproject
+- Repositório: https://github.com/Bauirxx/nfcproject (público).
 - Instruções obrigatórias: `CLAUDE.md` (prompt mestre) e `docs/prompts/FRONTEND.md`.
-- Fase em curso: frontend sobre API simulada (MSW) e backend `apps/api` (fase 1). O Supabase está **ligado** (ADR-0011): a sessão valida o token real; faltam o schema `app` e o login BFF.
+- Produção:
+  - frontend: https://nfcproject-zeta.vercel.app (Vercel);
+  - backend: https://nfcproject-im6b.onrender.com (Render, plano free);
+  - Supabase: projeto `ughsgiqolymjyzdjkpks`, eu-west-1, **plano Free**.
+- Fases: 1 (fundação) e 2 (gestão) cumprem o critério de saída; 3 (página pública e envio) feita, com o email limitado até haver domínio próprio; 4 (operação) em curso; 5 (publicação) por fazer.
 
 ## Resumo da arquitetura
 
-- Monorepo pnpm: `apps/web` (React 19, Vite 8, TypeScript 6, Tailwind 4), `packages/shared` (schemas Zod, constantes, validadores, links e permissões) e `apps/api` (backend NestJS 11 com adaptador Express; fundação feita).
-- O frontend só chama `/api/*` na mesma origem, com `credentials: include` e `X-CSRF-Token` nos pedidos que alteram dados (`apps/web/src/shared/api/client.ts`).
-- A página pública (`/c/:token`, `/p/:slug`) entra no carregamento inicial; o painel é carregado à parte (ADR-0003).
-- Decisões registadas em `docs/adr/0001` a `0009`; grafo do código em `docs/codebase-graph.md`.
+- Monorepo pnpm:
+  - `apps/web`: React 19, Vite 8, TypeScript 6, Tailwind 4;
+  - `packages/shared`: schemas Zod, constantes, validadores, links, vCard e permissões;
+  - `apps/api`: NestJS 11 com Express, empacotado com esbuild em `dist/server.cjs`.
+- O frontend só chama `/api/*` na mesma origem (rewrite do Vercel para o Render), com `credentials: include` e `X-CSRF-Token`. Em produção não há API simulada; o MSW só existe em desenvolvimento e nos testes.
+- Base de dados:
+  - o backend liga-se como `app_backend`, sem BYPASSRLS, com RLS por transação (`app.company_id`);
+  - a service_role só é usada no `SupabaseAdminService` (convites, membros, Storage; ADR-0017).
+- Decisões em `docs/adr/0001` a `0022`; grafo em `docs/codebase-graph.md`; requisitos em `docs/requirements.md`.
+- Operação:
+  - CI de segurança: `docs/ci.md`;
+  - cópias de segurança: `docs/backup.md`;
+  - incidentes: `docs/incident-response.md`;
+  - deploy: `docs/deploy.md`.
 
 ## Módulos
 
-auth, companies, members, cards, profiles, sharing, contact-sending, analytics, themes, audit, public-card. Nenhum tem ainda ecrãs implementados.
+auth, companies, members, cards, profiles, sharing (página pública e VCF), contact-sending, analytics, themes (dentro dos perfis, P-02), audit e uploads. Todos têm ecrãs e endpoints reais.
 
 ## Funcionalidades concluídas
 
@@ -59,23 +73,35 @@ O que mais existe e está verificado:
 
 ## Em curso
 
-| Tarefa | Estado | Notas |
+| Tarefa | Estado | O que falta |
 | --- | --- | --- |
-| T-FE-01 Base do projeto | Em revisão | `main.tsx` e `scripts/check-bundle-size.mjs` feitos; falta `playwright.config.ts` (T-FE-27) |
-| T-FE-03 Cliente da API | Em revisão | Código, testes e ADR-0005 prontos; `lib/parsed-api.ts` ganha teste com o primeiro consumidor (T-FE-06) |
-| T-FE-04 API simulada (MSW) | Em revisão | Código, testes, ADR-0009 e grafo prontos; `main.tsx` chama `startMockApi`; falta confirmar o worker no browser real (ao abrir `pnpm dev`) |
-| T-BE-01 Fundação do backend | Em desenvolvimento | Estrutura, segurança, guard global, filtro de erros, env e health feitos (10 testes) |
-| T-BE-03 Validação com Zod partilhado | Em desenvolvimento | `ZodValidationPipe` a consumir `@nfc-business/shared/schemas` (2 testes); falta aplicar aos endpoints e o empacotamento executável |
-| T-BE-02 Supabase e login BFF | Em desenvolvimento | Login/logout/sessão feitos; login real verificado (HTTP 200). Migração 0001 aplicada; ligação `app_backend` com RLS verificada (ADR-0013). Falta a migração 0002 e os restantes endpoints do contrato |
-| Deploy (Render + Vercel) | Em desenvolvimento | Backend empacotado e a correr localmente (`/api/health` 200); `render.yaml`, `vercel.json` e `docs/deploy.md` prontos (ADR-0012). A publicação em si é feita pelo dono nas contas Render/Vercel |
+| T-BE-05 Página pública no backend | Em revisão | Confirmar `TRUST_PROXY_HOPS=2` nos logs de produção (o IP certo nos limites) |
+| T-BE-09 Cópias de segurança (ADR-0022) | Em testes | Dono: instalar o PostgreSQL 17 command line tools, primeira cópia e primeiro restauro (`docs/backup.md`) |
+| T-BE-10 Plano de incidentes | Em revisão | Dono: preencher os contactos e fazer a primeira simulação |
+| T-FE-01 Base do projeto | Em revisão | `playwright.config.ts` (com T-FE-27) |
 
 ## Pendentes
 
-T-FE-06 a T-FE-28 (ver `docs/requirements.md`): autenticação, página pública, cartões, perfis, envio de contacto, empresas, membros, painel, estatísticas, temas, auditoria, conta, testes finais (Vitest, axe, Playwright) e orçamento do bundle.
+Funcionalidades:
+1. **Reposição do MFA por um administrador** no painel (decisão do dono; hoje só pelo painel do Supabase).
+2. **Procedimento de gravação dos chips NFC** (regra 4: chip bloqueado contra regravação). Precisa da resposta do dono: modelo dos chips (NTAG213/215/216?) e aplicação de gravação.
+3. **Papel e empresa em `app.users`** em vez do `app_metadata` do Supabase Auth.
+4. Lista de sessões ativas: o ecrã «Conta» só mostra a sessão atual (limitação do Supabase).
+
+Qualidade:
+- T-FE-26 (axe, incluindo o *timeout* dos `findBy*` sob carga) e T-FE-27 (Playwright: cinco fluxos, CSP, 360 px).
+
+Fase 5 (antes de gravar os chips definitivos):
+- domínio próprio com DNSSEC;
+- SPF, DKIM e DMARC: sem eles o Resend só entrega no email da conta Resend, por isso **o email a clientes reais ainda não funciona**;
+- plano Pro do Supabase e cópia diária automática noutro fornecedor (prazo do ADR-0022);
+- staging, OWASP ZAP e aprovação manual para produção (T-BE-07);
+- revisão externa ou pentest.
 
 ## Bloqueios
 
-Nenhum.
+- T-BE-07 (ZAP): não há ambiente de staging.
+- Gravação dos chips: à espera do modelo do chip e da aplicação de gravação.
 
 ## Problemas conhecidos e pontos por confirmar
 
@@ -277,15 +303,67 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 ## Estado dos testes
 
+Verificado a 2026-11-19:
 - `pnpm typecheck`: sem erros.
 - `pnpm lint`: sem erros nem avisos.
-- `pnpm test`: 440 testes a passar (90 em `packages/shared`, 295 em `apps/web`, 55 em `apps/api`), mais 10 de integração da base de dados que só correm com `DB_INTEGRATION=1` (verificados a 2026-11-18 contra o Supabase real). Nota: com o paralelismo de ficheiros por defeito, sob carga a suíte `cards` pode falhar por *timeout* dos `findBy*` (1000 ms) — não é regressão (passa isolada e a suíte web completa passa com `--no-file-parallelism`); é um ponto de afinação do ambiente de testes (candidato a T-FE-26).
-- `pnpm --filter @nfc-business/web build`: a passar; API simulada fora do bundle; chunk inicial da página pública 78 KB gzip (< 100 KB), sem router/TanStack Query/RHF/Zod (confirmado por `Select-String` no chunk).
-- Playwright: ainda sem testes. Falta o `scripts/check-bundle-size.mjs` (T-FE-28).
+- `pnpm test`: 499 testes a passar (90 em `packages/shared`, 295 em `apps/web`, 114 em `apps/api`).
+- Integração com `DB_INTEGRATION=1` em `apps/api`: **158/158 contra o Supabase real** (inclui o isolamento entre empresas). Corre ficheiro a ficheiro, com 60 s de *timeout*; precisa do `apps/api/.env` com `DATABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`.
+- Builds: web com o orçamento do bundle (página pública ~77 KB gzip, abaixo de 100 KB) e api (`dist/server.cjs`, que arranca e responde em JSON).
+- CI no GitHub: os cinco jobs verdes no último commit.
+- Nota: com o paralelismo de ficheiros por defeito, sob carga a suíte web `cards` pode falhar por *timeout* dos `findBy*` (1000 ms). Não é regressão; fica para a T-FE-26.
+- Playwright: ainda sem testes (T-FE-27).
 
 ## Registo de continuidade
 
-- Backend publicado no Render (2026-11-18): `https://nfcproject-im6b.onrender.com` (health 200, página pública 404 neutro com a base de dados, eventos 204, HSTS/CSP, sem X-Powered-By). O `vercel.json` aponta para ele. **Falta trocar a password do `app_backend`**, que ficou visível numa captura de ecrã (SQL `alter role`, `.env` e Render), e publicar o frontend no Vercel.
+### Retomar aqui (sessão de 2026-11-19, PC do trabalho → PC de casa)
+
+**Estado exato.**
+- Tudo está em `origin/main`, com o CI verde.
+- Última tarefa concluída: os testes de isolamento entre empresas (T-BE-11). A fase 2 cumpre o critério de saída.
+- Não há trabalho a meio nem alterações por commitar.
+
+**1. Preparar o PC de casa (uma vez)**
+1. `git pull`, depois `nvm use 24.22.2`, `corepack enable` e `pnpm install --frozen-lockfile`.
+2. **`apps/api/.env`.** Não vai para o git. Tem de ter estas variáveis, com os valores tirados do Render ou do Supabase, nunca colados no chat:
+   - `NODE_ENV=development` e `PORT=3000`;
+   - `SUPABASE_URL` e `SUPABASE_ANON_KEY`;
+   - `DATABASE_URL`: Session pooler, papel `app_backend`;
+   - `SUPABASE_SERVICE_ROLE_KEY`;
+   - `RESEND_API_KEY` e `ALERT_EMAIL_TO`;
+   - locais, nunca as do Render: `PUBLIC_APP_URL=http://localhost:5173`, `TRUST_PROXY_HOPS=0` e um `IP_HASH_SECRET` próprio (48 bytes aleatórios em base64url).
+
+   Variável presente mas vazia = o backend não arranca: comente as que não tiver. Modelo em `apps/api/.env.example`.
+3. **Hook de pre-commit (opcional, recomendado).** Instale o gitleaks 8.30.1, verificando o checksum, e corra `git config core.hooksPath scripts/hooks` (`docs/ci.md`, secção 2).
+4. **Para as cópias de segurança:** instale o PostgreSQL 17 command line tools (`docs/backup.md`, secção 1).
+5. **Verificar:**
+   - `pnpm typecheck && pnpm lint && pnpm test`;
+   - em `apps/api`, com `DB_INTEGRATION=1`: `pnpm exec vitest run`. Esperado: 158/158.
+
+**2. Ações do dono, por urgência**
+1. **INC-0001: trocar a palavra-passe do `app_backend`.** Ficou exposta numa captura de ecrã a 2026-11-18. Passos:
+   - SQL Editor: `alter role app_backend with password '…'`;
+   - atualizar o `DATABASE_URL` no Render e no `.env` dos dois PCs;
+   - fechar o INC-0001 em `docs/incident-response.md`.
+2. **Primeira cópia de segurança.** No plano Free não existe nenhuma: `scripts/backup/backup-db.ps1`, e a cópia vai para um disco externo.
+3. **GitHub e Render:** proteger a `main` (os 5 jobs), ativar os alertas do Dependabot e, no Render, Auto-Deploy «After CI Checks Pass» (`docs/ci.md`, secção 1).
+4. **Supabase Auth:** modelos de email (Reset Password, Invite user), Site URL e Redirect URLs `/definir-password` e `/convite` (`docs/deploy.md`, secções 4 e 5).
+5. **Testar o email:** no painel, «Enviar contacto» por email para o **email da conta Resend**. Até haver domínio, é o único destino que o Resend entrega. Deve chegar com o VCF em anexo.
+6. **Plano de incidentes:** preencher os contactos (secção 1).
+7. **Chips NFC:** dizer o modelo (NTAG213, 215 ou 216?) e a aplicação de gravação, para eu escrever o procedimento com o bloqueio contra regravação.
+8. **PC do trabalho:** o disco C está cheio (0 MB livres antes da limpeza; ~400 MB depois). Convém libertar espaço.
+
+**3. Próximas tarefas (Claude), por ordem.** Ver «Próxima tarefa, por ordem» abaixo.
+
+**4. Notas de ambiente.**
+- **PC do trabalho:**
+  - o Node 24 portátil, o gitleaks e o osv-scanner ficam no scratchpad, e a limpeza do Windows apaga-os; reinstalar sempre com checksum;
+  - o Bash não tem rede: push e chamadas de rede pelo PowerShell;
+  - o hook de pre-commit está ativo (`core.hooksPath`), por isso os commits precisam do gitleaks no PATH.
+- **Integração:** os testes contra o Supabase real criam e apagam dados de teste (empresas `co_it_*`, `co_its_*`, `co_iso_*`) e duas contas temporárias no Supabase Auth. Não usam dados reais.
+- **Commits:** em português sem acentos, terminados com a linha `Co-Authored-By`.
+
+### Histórico das sessões anteriores
+
 - Última tarefa (2026-11-19): **testes de isolamento entre empresas (T-BE-11)**, concluída; a fase 2 cumpre o critério de saída. Próximo, por ordem: reposição do MFA por um administrador no painel (cenário 5.2 do plano de incidentes), migração do papel/empresa para `app.users`, T-FE-26/27 (axe e Playwright), pôr em dia os estados em `docs/requirements.md`. Antes: **plano de resposta a incidentes (T-BE-10)**, em revisão (contactos e simulação pelo dono). Antes: **cópias de segurança (T-BE-09, ADR-0022)**, em testes: scripts e procedimento prontos; falta o dono instalar o PostgreSQL 17 command line tools, fazer a primeira cópia e o primeiro restauro num projeto de teste (`docs/backup.md`). Antes: **logs JSON e alertas (T-BE-08, ADR-0021)**, concluída. Antes: **CI de segurança (T-BE-06, ADR-0020)**, **concluída**: verificada em local e com o primeiro run verde no GitHub. Depois disso: o plano de cópias de segurança e de resposta a incidentes. Ferramentas locais no PC do trabalho: gitleaks, osv-scanner e um venv com o Semgrep 1.185.0 no scratchpad (apagáveis pela limpeza do Windows; reinstalar com checksum).
 - Antes: **endpoints do painel: estatísticas, auditoria e empresas (leitura e edição)**. Bloqueio: decisão sobre os convites (criar empresa e membros exige criar contas no Supabase Auth, ou seja `service_role` ou outra via). Próximo: membros (lista, mudar papel, remover; convites à espera de decisão), envio de contacto, uploads Cartões, perfis, renovação da sessão, conta e recuperação feitos. Antes: **MFA TOTP no backend (ADR-0016)**; falta o teste real no site com uma aplicação de autenticação. Próximo: os endpoints das empresas (`/api/companies`) e a migração do papel e da empresa para `app.users`. Antes: **correção da sessão, MFA e CSRF (ADR-0015)**. Próxima: endpoints de MFA (`/api/auth/mfa/setup`, `confirm`, `verify`, `disable`) com a API de MFA do Supabase, marcados com `@AllowWithoutMfa()` onde for preciso. Sem eles, o administrador não passa do ecrã de configuração do MFA. Antes: **T-BE-05, página pública no backend real** (ADR-0014). Em revisão: falta confirmar o `TRUST_PROXY_HOPS=2` depois do deploy. No Render é preciso acrescentar `TRUST_PROXY_HOPS=2`, `IP_HASH_SECRET` (aleatório, com 32 ou mais caracteres) e, depois do Vercel, `PUBLIC_APP_URL`. Próximo: os endpoints autenticados, a começar pelas empresas (`/api/companies`) e pela migração do papel e da empresa para `app.users`. Antes: **Migração 0002 aplicada e verificada** (pg_cron ativo; 9 testes de integração a passar contra o Supabase real). Próximo: os primeiros endpoints reais (empresas e página pública) sobre o `DatabaseService` e a vista `public_cards`. Antes: **Ligação à base de dados (ADR-0013)**. `DatabaseService` com o contexto RLS por transação, verificado contra o Supabase real. O `.env` do PC do trabalho tem o `DATABASE_URL`. **No PC de casa é preciso copiar a mesma linha `DATABASE_URL=...` para `apps/api/.env`, porque o ficheiro não vai para o Git.** Próximo: migração 0002 e os primeiros endpoints reais (empresas e página pública) sobre o `DatabaseService`. Antes: **T-FE-23 Temas** — ecrã dedicado que reutiliza o `ThemeEditor`; 3 testes; `PlaceholderPage` removido. Com isto, todos os ecrãs do frontend estão feitos. Antes: **T-FE-25 Conta** (frontend) — dados pessoais, palavra-passe, MFA e sessões; 5 testes. Antes: **T-FE-24 Auditoria** (frontend) — `features/audit/{queries,audit-page}.tsx`, `shared/i18n/panel/audit.ts`, rota ligada; 4 testes; grafo e requisitos atualizados. Antes disso (noutra sessão/máquina): **Backend executável e configuração de deploy (ADR-0012)** — empacotado com esbuild (`node apps/api/dist/server.cjs` corre; `/api/health` 200), DI explícita, `CoreModule` global; `render.yaml`, `vercel.json` e `docs/deploy.md` prontos. Login real do Supabase verificado (utilizador platform_admin criado pelo dono). Antes: login BFF, ligação ao Supabase; frontend até T-FE-22. (filtros, 4 gráficos de linha SVG, tabela por cartão, CSV protegido; 13 testes; skill `dataviz` aplicado). Antes: T-FE-21 dashboard, T-FE-20 membros, T-FE-19 empresas; backend T-BE-01 parcial. Estrutura NestJS, segurança, guard global negar-por-defeito (`@Public()`), filtro de erros do contrato, validação do ambiente e health público, com 10 testes. Decisões no ADR-0010. `typecheck`, `lint`, `pnpm test` (355) e `pnpm --filter @nfc-business/api build` a passar. Antes (frontend): T-FE-11 (envio do dono na página pública) — concluída. Botão «Enviar o meu contacto» só para o dono com sessão, que abre o `SendContactForm` via `public-send-panel` carregado por `import()` (fora do bundle público). Antes: T-FE-17/18 (envio de contacto), T-FE-14/15/16 (perfis). `typecheck`, `lint`, `pnpm test` (345) e build de produção a passar (página pública ~79 KB gzip; formulário de envio em chunk separado).
 - Estado e decisões do backend (ADR-0010): `apps/api` usa `module: esnext` + `moduleResolution: bundler` (serve o typecheck e o Vitest); `experimentalDecorators` e `emitDecoratorMetadata` ligados para a DI do NestJS; a regra ESLint `consistent-type-imports` está desligada em `apps/api` (os tipos do construtor têm de ser imports de valor). O `SessionService` lê o cookie `nfc_access` mas ainda não valida (sem Supabase, os endpoints protegidos dão 401 — correto para a fundação). **Bloqueios conhecidos, por resolver nos próximos blocos:** a ligação ao Supabase precisa de credenciais do dono do produto; o `dist` emitido ainda não é executável (a resolução `bundler` não põe extensões para Node ESM) e a forma de consumir `@nfc-business/shared` em runtime fica por decidir.
@@ -303,15 +381,23 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 ### Próxima tarefa, por ordem
 
-1. **Deploy (o dono executa):** seguir `docs/deploy.md` — publicar o backend no Render (com as chaves do Supabase), trocar o URL do Render em `vercel.json`, publicar o frontend no Vercel. Depois do deploy: o **login funciona**; os restantes ecrãs dão erro até os endpoints existirem no backend.
-2. **Backend (construir os endpoints):** (a) ~~aplicar a 0001~~ (feito) e escrever a migração 0002 (contact_shares, analytics_events, audit_logs), que o dono aplica no SQL Editor; (b) ~~ligação com o `app_backend`~~ (feito, ADR-0013; falta `app.user_id` quando for preciso); (c) os módulos de endpoints sobre o ADR-0004 (começar por público e painel), com `ZodValidationPipe` e posse por empresa; (d) migrar o papel/empresa do `app_metadata` para `app.users`; (e) MFA via Supabase.
-2. **Frontend:** todos os ecrãs feitos (T-FE-23 temas e T-FE-25 conta concluídas em 2026-11-18). Falta só a fase de testes finais (T-FE-26/27/28). Notas antigas: (ecrã dedicado de personalização; o editor de tema por perfil já existe em `features/profiles/theme-editor.tsx` — decidir o que o ecrã de temas acrescenta face a isso, sem inventar requisitos: RF-FE-17 fala de modelos, cores com contraste, logótipo e pré-visualização, tudo já coberto pelo editor por perfil). **T-FE-24 auditoria concluída.**
-5. (Feito) **T-FE-23** Temas.
-6. **T-FE-26/27/28** Suite de testes de acessibilidade (axe; incluir aqui a afinação do *timeout*/paralelismo dos `findBy*`), Playwright (cinco fluxos, CSP, 360 px) e `scripts/check-bundle-size.mjs`.
-7. Em cada passo: atualizar `docs/codebase-graph.md`, `docs/requirements.md` (estados) e este ficheiro; só marcar Concluída o que cumprir a Definition of Done.
+1. **Reposição do MFA por um administrador** (T-BE nova; decisão do dono, ADR-0016).
+   - **Endpoint e ecrã:**
+     - endpoint: platform_admin para administradores de empresa, company_admin para membros da sua empresa;
+     - o ecrã de membros ganha a ação «Repor MFA», com confirmação.
+   - **Comportamento:**
+     - apaga os fatores no Supabase com o `SupabaseAdminService.auth.admin.mfa`, sem mexer na service_role fora desse serviço;
+     - termina as sessões e regista `audit_logs`.
+   - **Testes:** posse/isolamento (404 entre empresas) e testes unitários. Também é preciso atualizar o cenário 5.2 do plano de incidentes.
+   - **Antes de implementar:** STRIDE (elevação de privilégio), ADR e confirmar a ação nova da auditoria em `AUDIT_ACTIONS`.
+2. **Procedimento de gravação dos chips NFC** (regra 4), quando o dono indicar o modelo do chip e a aplicação de gravação. Fica em `docs/`, com o URL `/c/<token>` copiado do painel, o bloqueio permanente, a verificação depois de bloquear e o registo.
+3. **Papel e empresa a partir de `app.users`** (regra 2). Ler na sessão e manter o `app_metadata` só como espelho; inclui uma migração para as contas antigas, por exemplo o platform_admin inicial.
+4. **Confirmar o `TRUST_PROXY_HOPS=2`** com um pedido em produção e o log.
+5. **T-FE-26/27:** axe e Playwright.
+6. **Em cada passo:** atualizar `docs/codebase-graph.md`, `docs/requirements.md` e este ficheiro; só marcar Concluída o que cumprir a Definition of Done.
 
 ### Passos para retomar
 
-- `git pull` (o trabalho desta sessão está em `origin/main`).
-- Instalar/correr: ver `README.md`. No PC de casa há Node 24 com nvm (`nvm use 24.22.2`). No PC do trabalho não há Node 24 nem nvm, pelo que se usa um Node 24 portátil só para a sessão; aí o `git push` faz-se pelo PowerShell.
-- Correr `pnpm typecheck`, `pnpm lint` e `pnpm test` antes de continuar.
+- Ver «Retomar aqui» no início desta secção.
+- `git pull`. No PC de casa: `nvm use 24.22.2`. No PC do trabalho: Node 24 portátil, e push pelo PowerShell.
+- Antes de continuar: `pnpm typecheck`, `pnpm lint`, `pnpm test` e, com o `.env` completo, a integração em `apps/api` com `DB_INTEGRATION=1`.

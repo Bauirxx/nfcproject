@@ -112,28 +112,28 @@ Estados das tarefas: Não iniciada, Planeada, Em desenvolvimento, Em revisão, E
 
 | ID | Tarefa | Passo | Requisitos | Estado |
 |----|--------|-------|------------|--------|
-| T-FE-01 | Workspace, ferramentas e configuração | 1 | RNF-FE-01, RNF-FE-08 | Em desenvolvimento |
+| T-FE-01 | Workspace, ferramentas e configuração | 1 | RNF-FE-01, RNF-FE-08 | Em revisão (falta `playwright.config.ts`, com T-FE-27) |
 | T-FE-02 | Pacote partilhado: schemas, validadores, links, permissões | 1 | RNF-FE-01, RF-FE-22 | Concluída |
 | T-FE-03 | Cliente da API: credenciais, CSRF, renovação, 401/403/429 | 1 | RF-FE-22, RNF-FE-01 | Em revisão |
 | T-FE-04 | API simulada com MSW | 1 | RNF-FE-08 | Em revisão |
-| T-FE-05 | Casca da aplicação: routing, layout, menu por papel, tema, erros, i18n, componentes | 1 | RF-FE-21, RF-FE-22, RNF-FE-03 a 07 | Planeada |
-| T-FE-06 | Login e verificação MFA | 2 | RF-FE-03 | Planeada |
-| T-FE-07 | Configuração de MFA | 2 | RF-FE-04 | Planeada |
-| T-FE-08 | Recuperar e definir password | 2 | RF-FE-05 | Planeada |
-| T-FE-09 | Aceitar convite | 2 | RF-FE-06 | Planeada |
-| T-FE-10 | Página pública do cartão | 3 | RF-FE-01, RF-FE-02, RNF-FE-02 | Planeada |
-| T-FE-11 | «Enviar o meu contacto» na página pública | 5 | RF-FE-16 | Planeada |
-| T-FE-12 | Cartões: lista, criação e associação | 4 | RF-FE-10 | Planeada |
-| T-FE-13 | Cartões: estados, URL do chip, QR, histórico | 4 | RF-FE-11 | Planeada |
-| T-FE-14 | Perfis: lista e editor com pré-visualização | 4 | RF-FE-12 | Planeada |
-| T-FE-15 | Perfis: ordenação e visibilidade | 4 | RF-FE-13 | Planeada |
-| T-FE-16 | Perfis: fotografia com recorte e validação | 4 | RF-FE-13 | Planeada |
-| T-FE-17 | Enviar contacto: formulário, canais, pré-visualização | 5 | RF-FE-14 | Planeada |
-| T-FE-18 | Histórico de envios e limites | 5 | RF-FE-15 | Planeada |
-| T-FE-19 | Empresas | 6 | RF-FE-08 | Planeada |
-| T-FE-20 | Membros | 6 | RF-FE-09 | Planeada |
-| T-FE-21 | Dashboard | 7 | RF-FE-07 | Planeada |
-| T-FE-22 | Estatísticas e CSV | 7 | RF-FE-18 | Planeada |
+| T-FE-05 | Casca da aplicação: routing, layout, menu por papel, tema, erros, i18n, componentes | 1 | RF-FE-21, RF-FE-22, RNF-FE-03 a 07 | Concluída |
+| T-FE-06 | Login e verificação MFA | 2 | RF-FE-03 | Concluída |
+| T-FE-07 | Configuração de MFA | 2 | RF-FE-04 | Concluída |
+| T-FE-08 | Recuperar e definir password | 2 | RF-FE-05 | Concluída |
+| T-FE-09 | Aceitar convite | 2 | RF-FE-06 | Concluída |
+| T-FE-10 | Página pública do cartão | 3 | RF-FE-01, RF-FE-02, RNF-FE-02 | Concluída |
+| T-FE-11 | «Enviar o meu contacto» na página pública | 5 | RF-FE-16 | Concluída |
+| T-FE-12 | Cartões: lista, criação e associação | 4 | RF-FE-10 | Concluída |
+| T-FE-13 | Cartões: estados, URL do chip, QR, histórico | 4 | RF-FE-11 | Concluída |
+| T-FE-14 | Perfis: lista e editor com pré-visualização | 4 | RF-FE-12 | Concluída |
+| T-FE-15 | Perfis: ordenação e visibilidade | 4 | RF-FE-13 | Concluída |
+| T-FE-16 | Perfis: fotografia com recorte e validação | 4 | RF-FE-13 | Concluída |
+| T-FE-17 | Enviar contacto: formulário, canais, pré-visualização | 5 | RF-FE-14 | Concluída |
+| T-FE-18 | Histórico de envios e limites | 5 | RF-FE-15 | Concluída |
+| T-FE-19 | Empresas | 6 | RF-FE-08 | Concluída |
+| T-FE-20 | Membros | 6 | RF-FE-09 | Concluída |
+| T-FE-21 | Dashboard | 7 | RF-FE-07 | Concluída |
+| T-FE-22 | Estatísticas e CSV | 7 | RF-FE-18 | Concluída |
 | T-FE-23 | Temas e personalização | 7 | RF-FE-17 | Concluída |
 | T-FE-24 | Auditoria | 7 | RF-FE-19 | Concluída |
 | T-FE-25 | Conta | 8 | RF-FE-20 | Concluída |
@@ -147,9 +147,9 @@ Fonte: `CLAUDE.md` (arquitetura, endpoints, regras de segurança e fases). O bac
 
 | ID | Tarefa | Fase | Estado |
 |----|--------|------|--------|
-| T-BE-01 | Fundação: pacote `apps/api`, segurança (helmet, CORS fechado, cabeçalhos), guard global negar-por-defeito com `@Public()`, filtro de erros no formato do contrato, validação do ambiente, health público | 1 | Em desenvolvimento |
-| T-BE-02 | Supabase: projeto, schema `app`, RLS, papel `app_backend`, ligação do `SessionService` ao Supabase Auth e login BFF por cookies | 1 | Bloqueada (precisa de credenciais do dono do produto) |
-| T-BE-03 | `ValidationPipe` global com os schemas Zod partilhados; empacotamento executável do backend | 1 | Não iniciada |
+| T-BE-01 | Fundação: pacote `apps/api`, segurança (helmet, CORS fechado, cabeçalhos), guard global negar-por-defeito com `@Public()`, filtro de erros no formato do contrato, validação do ambiente, health público | 1 | Concluída |
+| T-BE-02 | Supabase: projeto, schema `app`, RLS, papel `app_backend`, ligação do `SessionService` ao Supabase Auth e login BFF por cookies | 1 | Concluída (login BFF real, sessão, MFA, RLS com app_backend; ADR-0011/0013/0015/0016) |
+| T-BE-03 | `ValidationPipe` global com os schemas Zod partilhados; empacotamento executável do backend | 1 | Concluída (ZodValidationPipe em todos os endpoints; dist/server.cjs com esbuild, ADR-0012) |
 | T-BE-05 | Página pública no backend real: cartão e VCF por token e slug, eventos públicos (rate limit 60/min por IP, cache 60 s, noindex, 404 neutro, IP só como hash, deduplicação de 30 min). ADR-0014. Testes: `public/*.test.ts`, `common/{rate-limiter,ip-hash}.test.ts` e o teste de integração de `public_cards` | 3 | Em revisão (falta confirmar `TRUST_PROXY_HOPS` depois do deploy) |
 | T-BE-06 | CI de segurança (regras 9 e 10): gitleaks no histórico e no pre-commit, `pnpm audit`, osv-scanner, Semgrep com regras próprias, testes e builds, SBOM com syft; Actions fixadas por hash, ferramentas por checksum, permissões mínimas; Dependabot com 7 dias. ADR-0020, `docs/ci.md`. Critérios: (1) cada ferramenta corre em local sem resultados; (2) as regras próprias disparam em exemplos com erro; (3) o primeiro run no GitHub passa os cinco jobs | 4 | Concluída (2026-11-19: os três critérios verificados; run do commit `f43ab2c` verde) |
 | T-BE-08 | Logs JSON com `request_id` e alertas (regra 11): logger JSON global, `X-Request-Id`, log de acesso com a rota padrão (sem tokens nem query string), alertas `server_error`, `contact_spike`, `contact_rate_limited` e `auth_rate_limited` no log e por email (`ALERT_EMAIL_TO`). ADR-0021. Testes: `common/observability.test.ts` (9). Critérios: (1) todas as linhas em JSON e com `request_id` dentro do pedido; (2) nenhum token nem query string no log; (3) cada regra de alerta dispara e repete no máximo uma vez em 15 min; (4) o servidor empacotado arranca e regista em JSON | 4 | Concluída (2026-11-19: os quatro critérios verificados, o 4.º com o `dist/server.cjs` em local) |
@@ -157,7 +157,7 @@ Fonte: `CLAUDE.md` (arquitetura, endpoints, regras de segurança e fases). O bac
 | T-BE-10 | Plano de resposta a incidentes (regra 11, «escrito antes do lançamento»): `docs/incident-response.md` com gravidade, fases, interruptores de emergência, 9 cenários (segredo exposto com tabela de rotação, conta comprometida, fuga de dados, abuso do envio, vulnerabilidade, indisponibilidade, perda de dados, força bruta, cartão perdido), comunicação e registo/revisão. Critérios: (1) cada ação referida existe no sistema (verificado: transições dos cartões, remoção de membros, efeitos da rotação do `IP_HASH_SECRET`); (2) o dono preenche os contactos (secção 1); (3) primeira simulação de mesa antes da fase 5 | 4 | Em revisão (critério 1 verificado; 2 e 3 dependem do dono) |
 | T-BE-11 | Testes de isolamento entre empresas (regra 2; critério de saída da fase 2): `common/isolation.integration.test.ts` (15 testes) — RLS sozinha nas 8 tabelas por empresa (consultas sem filtro no contexto da A não veem a B; escritas sobre a B afetam 0 linhas; inserir na B é recusado), membros (lista só da própria empresa; mudar papel/remover da B dá 404 sem chamar o Supabase Auth), empresas (company_admin recebe 403 pelo papel) e uploads (B não envia nem consome ficheiros da A). Junta-se a `panel`, `cards`, `profiles` e `contact-sending`. Critério: suíte de integração completa a passar contra o Supabase real | 2 | Concluída (2026-11-19: 158/158 com `DB_INTEGRATION=1`) |
 | T-BE-07 | OWASP ZAP em staging e aprovação manual para produção (regra 10; critério de saída da fase 4: ZAP sem alertas altos) | 4 | Bloqueada (não há ambiente de staging nem projeto Supabase de staging) |
-| T-BE-04+ | Módulos de domínio (empresas, membros, cartões, perfis, partilha, envio, estatísticas, temas, auditoria) sobre o contrato do ADR-0004 | 2–3 | Não iniciada |
+| T-BE-04+ | Módulos de domínio (empresas, membros, cartões, perfis, partilha, envio, estatísticas, temas, auditoria) sobre o contrato do ADR-0004 | 2–3 | Concluída (todos os endpoints do ADR-0004 no backend real; isolamento em T-BE-11) |
 
 Critério de saída da fase 1 (CLAUDE.md): nenhum endpoint responde sem autenticação, exceto os `@Public()`. O guard global já o garante; falta a autenticação real (T-BE-02).
 
