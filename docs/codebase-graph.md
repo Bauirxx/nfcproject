@@ -257,6 +257,7 @@ Inferido: uma migração que crie tabelas com dados novos em `app` fica coberta 
 | `apps/web/src/shared/api/*` | `client.test.ts` e, quando existirem, os testes das features |
 | `endpoints.ts` | o handler correspondente, o ADR-0004 e este grafo |
 | Mover `theme-preference.ts`, `supabase-admin.service.ts` ou `config/env.ts` | os caminhos em `.semgrep/nfc-business.yml` (senão o job `sast` falha) |
+| Políticas RLS (`supabase/migrations/*`), uma tabela nova com `company_id`, ou `members/*`, `companies/*`, `uploads/*` | `DB_INTEGRATION=1 vitest run` completo; uma tabela nova por empresa entra em `TENANT_TABLES` de `common/isolation.integration.test.ts` |
 | Caminhos de `auth/*` ou `contact-shares` | `AUTH_LIMITED_ROUTES`/`CONTACT_SHARES_ROUTE` em `request-monitor.ts` e `observability.test.ts` |
 | `json-logger.ts`, `request-logging.ts` ou `esbuild.mjs` | `observability.test.ts` e arrancar `dist/server.cjs` para ver as linhas JSON |
 | Dependências (`package.json`, `pnpm-lock.yaml`, `overrides`) | `pnpm audit`, osv-scanner e `pnpm install --frozen-lockfile` (job `dependencies` e `quality`) |
