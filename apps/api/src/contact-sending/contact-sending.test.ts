@@ -23,7 +23,7 @@ describe('email do envio de contacto', () => {
 
   it('envia pelo Resend com o VCF em anexo e o cancelamento em um clique; sem chave responde 503', async () => {
     const fetcher = vi.fn(async () => new Response('{}', { status: 200 }));
-    const service = new EmailService(loadEnv({ RESEND_API_KEY: 're_teste_1234567890' }));
+    const service = new EmailService(loadEnv({ RESEND_API_KEY: 're_teste_1234567890' })); // gitleaks:allow (chave inventada)
     await service.sendContact(
       {
         to: 'cliente@exemplo.test',

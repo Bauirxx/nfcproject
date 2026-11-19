@@ -16,7 +16,8 @@ export type Fetcher = (url: string, init: { headers: Record<string, string>; sig
  * e regista o aviso: o comprimento mínimo de 12 caracteres continua a aplicar-se.
  */
 export async function isBreachedPassword(password: string, fetcher: Fetcher = fetch as unknown as Fetcher): Promise<boolean> {
-  const hash = createHash('sha1').update(password, 'utf8').digest('hex').toUpperCase();
+  // SHA-1 exigido pela API k-anonymity do HIBP; só os 5 primeiros caracteres saem, nada é guardado.
+  const hash = createHash('sha1').update(password, 'utf8').digest('hex').toUpperCase(); // nosemgrep: node_sha1
   const prefix = hash.slice(0, 5);
   const suffix = hash.slice(5);
   try {

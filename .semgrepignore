@@ -1,0 +1,14 @@
+# Ficheiros fora da análise Semgrep (ADR-0020). Este ficheiro substitui a lista por defeito do Semgrep,
+# por isso repete o .gitignore (node_modules, dist, .env, ...).
+:include .gitignore
+node_modules/
+dist/
+pnpm-lock.yaml
+
+# Testes e API simulada: dados fictícios (palavras-passe, segredos TOTP de exemplo) que nunca chegam ao build
+# de produção. O gitleaks continua a analisá-los, e as regras de arquitetura (.semgrep/) só se aplicam ao código real.
+*.test.ts
+*.test.tsx
+*.integration.test.ts
+apps/web/src/mocks/
+apps/web/e2e/

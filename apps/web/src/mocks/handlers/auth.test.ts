@@ -341,7 +341,7 @@ describe('POST /api/auth/invite/accept', () => {
 
   it('recusa convites desconhecidos', async () => {
     const response = await api('POST', '/api/auth/invite/accept', {
-      token: 'convite-desconhecido-01',
+      token: 'convite-desconhecido-01', // gitleaks:allow (token fictício)
       name: 'Alguém',
       password: STRONG_PASSWORD,
     });
@@ -378,7 +378,7 @@ describe('conta', () => {
 
     const weak = await api('POST', '/api/auth/password', {
       currentPassword: MOCK_USERS.owner.password,
-      newPassword: 'qwertyuiop12',
+      newPassword: 'qwertyuiop12', // gitleaks:allow (palavra-passe fraca de propósito)
     });
     expect(await errorCode(weak)).toBe('weak_password');
 

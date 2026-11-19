@@ -4,7 +4,7 @@
 
 export const MOCK_USERS = {
   platformAdmin: { email: 'admin@nfcbusiness.test', password: 'Plataforma#2026', totpSecret: 'JBSWY3DPEHPK3PXP' },
-  companyAdmin: { email: 'ana.admin@acme.test', password: 'Empresa#2026ok', totpSecret: 'KRSXG5CTMVRXEZLU' },
+  companyAdmin: { email: 'ana.admin@acme.test', password: 'Empresa#2026ok', totpSecret: 'KRSXG5CTMVRXEZLU' }, // gitleaks:allow
   editor: { email: 'edu.editor@acme.test', password: 'Editor#2026okay', totpSecret: null },
   owner: { email: 'paula.owner@acme.test', password: 'Perfil#2026okay', totpSecret: null },
   /** Administrador que ainda não configurou a verificação em dois passos. */

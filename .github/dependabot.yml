@@ -1,0 +1,28 @@
+# Atualizações automáticas propostas como pull requests (CLAUDE.md, regra 10; ADR-0020).
+# cooldown: só propõe versões com pelo menos 7 dias, como o minimumReleaseAge do pnpm.
+# As correções de segurança (Dependabot security updates) não esperam: ative-as em Settings > Advanced Security.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    groups:
+      dev-tooling:
+        dependency-type: development
+        update-types: [minor, patch]
+      runtime-patches:
+        dependency-type: production
+        update-types: [patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7

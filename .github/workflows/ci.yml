@@ -1,0 +1,140 @@
+# CI de segurança e qualidade do NFC Business (ADR-0020; CLAUDE.md, regra 10).
+# - Actions fixadas pelo hash do commit (o comentário indica a versão); ferramentas descarregadas com checksum.
+# - Permissões mínimas: só leitura do código; nenhum job tem acesso a segredos de produção.
+# - Versões escolhidas com pelo menos 7 dias de publicação; o Dependabot propõe as atualizações (dependabot.yml).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24.22.2
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  OSV_SCANNER_VERSION: 2.7.1
+  OSV_SCANNER_SHA256: fb7dab19a8bd9bbe5c3189f09d4b7ee1820c9553a23bac202648a56efd2f6ee8
+
+jobs:
+  secrets:
+    name: Segredos (gitleaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Instalar gitleaks (checksum verificado)
+        run: |
+          curl -sSfL -o gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum --check --strict
+          tar -xzf gitleaks.tar.gz gitleaks
+          rm gitleaks.tar.gz
+      - name: Analisar todo o histórico
+        run: ./gitleaks git --redact --no-banner --exit-code 1 .
+
+  quality:
+    name: Tipos, lint, testes e builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - name: Instalar dependências (lockfile congelado, sem scripts)
+        run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      # Os testes de integração contra o Supabase só correm com DB_INTEGRATION=1, nunca no CI.
+      - run: pnpm test
+      - name: Build do frontend e orçamento de JavaScript
+        run: |
+          pnpm --filter @nfc-business/web build
+          pnpm check:bundle
+      - name: Build do backend
+        run: pnpm --filter @nfc-business/api build
+
+  dependencies:
+    name: Vulnerabilidades em dependências (pnpm audit, osv-scanner)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Falha em qualquer severidade: os prazos da regra 10 contam a partir da deteção.
+      - name: pnpm audit
+        run: pnpm audit
+      - name: Instalar osv-scanner (checksum verificado)
+        run: |
+          curl -sSfL -o osv-scanner "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64"
+          echo "${OSV_SCANNER_SHA256}  osv-scanner" | sha256sum --check --strict
+          chmod +x osv-scanner
+      - name: osv-scanner
+        run: ./osv-scanner scan source --lockfile pnpm-lock.yaml
+
+  sast:
+    name: Análise estática (Semgrep)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    container:
+      image: semgrep/semgrep@sha256:67518c174185a2043fdbed16c70631b79209499b3671178e7194379b48295a0d # 1.185.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Conjuntos públicos + regras próprias (.semgrep/). As três regras excluídas só confirmam que o helmet
+      # está ativo (resultados «bons» do njsscan), não são problemas.
+      - name: Semgrep
+        run: >-
+          semgrep scan --metrics=off --error
+          --config p/default --config p/typescript --config p/react --config p/nodejsscan
+          --config p/owasp-top-ten --config p/github-actions --config .semgrep/
+          --exclude-rule ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_csp
+          --exclude-rule ajinabraham.njsscan.good.good_helmet_checks.helmet_header_hsts
+          --exclude-rule ajinabraham.njsscan.good.good_helmet_checks.helmet_header_referrer_policy
+
+  sbom:
+    name: SBOM (syft)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          path: .
+          format: spdx-json
+          syft-version: v1.57.1
+          artifact-name: sbom-nfc-business.spdx.json
+          dependency-snapshot: false
+          upload-release-assets: false

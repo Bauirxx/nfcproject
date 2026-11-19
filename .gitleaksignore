@@ -1,0 +1,10 @@
+# Falsos positivos revistos um a um (ADR-0020). Cada linha é a impressão digital exata de uma ocorrência
+# (commit:ficheiro:regra:linha), nunca um ficheiro inteiro: um segredo real noutra linha continua a ser apanhado.
+#
+# Chave inventada no teste unitário do EmailService (re_teste_1234567890), sem valor real.
+0becd940e5cb3e7000b1f2c24f58406dfea03ec4:apps/api/src/contact-sending/contact-sending.test.ts:generic-api-key:26
+# Token de convite e palavra-passe fictícios nos testes da API simulada.
+f28e1cc01fdc91379e07d793f76f04600d822a08:apps/web/src/mocks/handlers/auth.test.ts:generic-api-key:358
+f28e1cc01fdc91379e07d793f76f04600d822a08:apps/web/src/mocks/handlers/auth.test.ts:generic-api-key:395
+# Utilizadores fictícios da API simulada (domínios .test; JBSWY3DPEHPK3PXP é o segredo TOTP de exemplo público).
+55fc6d40990c6c180ba236c1cad06186424abdb8:apps/web/src/mocks/credentials.ts:generic-api-key:7

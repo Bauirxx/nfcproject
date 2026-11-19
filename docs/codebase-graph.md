@@ -211,6 +211,20 @@ Do prompt mestre: `users`, `companies`, `company_members`, `digital_profiles`, `
 - `localStorage`, `sessionStorage`, `indexedDB` e `document.cookie` são proibidos fora de `src/mocks/**` e de `src/shared/lib/theme-preference.ts` (ESLint `no-restricted-globals` e `no-restricted-properties`).
 - Nenhum `dangerouslySetInnerHTML`, `innerHTML`, `document.write` nem `console` no código do frontend.
 
+- No CI (ADR-0020, confirmado): as regras Semgrep de `.semgrep/nfc-business.yml` repetem as de cima para todo o repositório e acrescentam: sem cliente Supabase em `apps/web`, `SUPABASE_SERVICE_ROLE_KEY` só em `supabase-admin.service.ts` e `config/env.ts`, sem TLS sem verificação, sem segredos em `VITE_`.
+
+## 6.1 CI e cadeia de fornecimento (confirmado, ADR-0020)
+
+| Ficheiro | Papel | Depende de |
+|----------|-------|------------|
+| `.github/workflows/ci.yml` | Jobs `secrets`, `quality`, `dependencies`, `sast`, `sbom` | `package.json` (scripts `typecheck`, `lint`, `test`, `check:bundle`), `pnpm-lock.yaml`, `.gitleaksignore`, `.semgrep/`, `.semgrepignore` |
+| `.github/dependabot.yml` | Atualizações npm e Actions com 7 dias de espera | — |
+| `.gitleaksignore` | Impressões digitais de 4 dados fictícios no histórico | commits `0becd94`, `f28e1cc`, `55fc6d4` |
+| `.semgrep/nfc-business.yml` | Regras de arquitetura e segurança próprias | caminhos de `apps/web/src`, `apps/api/src/supabase`, `apps/api/src/config` |
+| `.semgrepignore` | Exclui testes e API simulada | `.gitignore` |
+| `scripts/hooks/pre-commit` | gitleaks nos ficheiros em stage | gitleaks no PATH; `git config core.hooksPath scripts/hooks` |
+| `pnpm-workspace.yaml` | `minimumReleaseAge`, `blockExoticSubdeps`, `trustPolicy`, `overrides` (multer, minimatch) | — |
+
 ## 7. Testes a repetir quando algo muda
 
 | Se mudar… | Repetir |
@@ -220,3 +234,5 @@ Do prompt mestre: `users`, `companies`, `company_members`, `digital_profiles`, `
 | `apps/web/src/mocks/seed.ts` | todos os `handlers/*.test.ts` (as contagens dos testes dependem dos dados de demonstração) e `docs/chaves-de-demonstracao.md` |
 | `apps/web/src/shared/api/*` | `client.test.ts` e, quando existirem, os testes das features |
 | `endpoints.ts` | o handler correspondente, o ADR-0004 e este grafo |
+| Mover `theme-preference.ts`, `supabase-admin.service.ts` ou `config/env.ts` | os caminhos em `.semgrep/nfc-business.yml` (senão o job `sast` falha) |
+| Dependências (`package.json`, `pnpm-lock.yaml`, `overrides`) | `pnpm audit`, osv-scanner e `pnpm install --frozen-lockfile` (job `dependencies` e `quality`) |

@@ -1,0 +1,10 @@
+#!/bin/sh
+# Hook de pre-commit do NFC Business (CLAUDE.md, regra 9; ADR-0020): procura segredos no que vai ser commitado.
+# Ativar uma vez por máquina:   git config core.hooksPath scripts/hooks
+# Requer o gitleaks no PATH (https://github.com/gitleaks/gitleaks/releases, verificar o checksum).
+# O CI repete a análise em todo o histórico, por isso um commit que escape aqui é apanhado no push.
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks não encontrado no PATH. Instale-o (ver docs/ci.md) ou o commit não é verificado." >&2
+  exit 1
+fi
+exec gitleaks git --pre-commit --staged --redact --no-banner .

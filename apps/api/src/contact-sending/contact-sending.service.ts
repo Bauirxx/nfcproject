@@ -76,7 +76,7 @@ export class ContactSendingService {
   }
 
   isValidUnsubscribe(hash: string, token: string): boolean {
-    if (!/^[0-9a-f]{64}$/.test(hash)) return false;
+    if (!/^[0-9a-f]{64}$/.test(hash)) return false; // nosemgrep: regex_dos (ancorada, tamanho fixo, sem retrocesso)
     const expected = Buffer.from(this.unsubscribeToken(hash));
     const actual = Buffer.from(token);
     return actual.length === expected.length && timingSafeEqual(actual, expected);

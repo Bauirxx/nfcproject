@@ -8,3 +8,15 @@ minimumReleaseAge: 10080
 # Nenhum script de ciclo de vida de dependências é executado na instalação.
 ignoreScripts: true
 engineStrict: true
+# Dependências indiretas só do registo npm: nunca de git, tarballs ou URLs (ADR-0020).
+blockExoticSubdeps: true
+# Recusa uma versão nova publicada com menos garantias de confiança (proveniência) do que as anteriores.
+trustPolicy: no-downgrade
+
+# Correções de vulnerabilidades em dependências indiretas (ADR-0020). Retirar quando as dependências diretas
+# já trouxerem estas versões (o pnpm audit e o osv-scanner no CI confirmam).
+overrides:
+  # GHSA-q7qp-rjg7-q26m (alta), via @nestjs/platform-express.
+  multer@<2.5.0: 2.5.0
+  # GHSA-g3hv-75wg-m249 (média), via typescript-eslint (só desenvolvimento).
+  minimatch@>=7.0.0 <11.0.1: 11.0.1

@@ -1,0 +1,76 @@
+# Regras Semgrep próprias do NFC Business (ADR-0020). Cada regra transforma uma regra do CLAUDE.md numa
+# verificação automática no CI. Complementam os conjuntos públicos (p/default, p/typescript, ...).
+rules:
+  - id: nfc-no-dangerously-set-inner-html
+    message: >-
+      dangerouslySetInnerHTML é proibido (CLAUDE.md, regra 7). Renderize texto com JSX, que o React escapa.
+    severity: ERROR
+    languages: [typescript, javascript]
+    pattern-either:
+      - pattern: <$EL dangerouslySetInnerHTML={...} />
+      - pattern: <$EL dangerouslySetInnerHTML={...}>...</$EL>
+      - pattern: |
+          { dangerouslySetInnerHTML: $X }
+
+  - id: nfc-tls-verification-disabled
+    message: >-
+      Nunca desativar a verificação TLS. Para a ligação ao Supabase use o certificado da CA (apps/api/certs, ADR-0013).
+    severity: ERROR
+    languages: [typescript, javascript]
+    pattern-either:
+      - pattern: |
+          { rejectUnauthorized: false }
+      - pattern: |
+          { ..., rejectUnauthorized: false, ... }
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = $V
+
+  - id: nfc-web-no-supabase-client
+    message: >-
+      O frontend nunca usa o cliente Supabase: chama só /api/* na mesma origem (CLAUDE.md, «Arquitetura»).
+    severity: ERROR
+    languages: [typescript, javascript]
+    paths:
+      include: [apps/web/]
+    pattern-either:
+      - pattern: import $X from '@supabase/supabase-js'
+      - pattern: import { ... } from '@supabase/supabase-js'
+      - pattern: import '@supabase/supabase-js'
+
+  - id: nfc-web-storage-only-for-theme
+    message: >-
+      Sem tokens nem dados de sessão em localStorage/sessionStorage (CLAUDE.md, regra 1). A única exceção é a
+      preferência de tema (shared/lib/theme-preference.ts); a API simulada (mocks) nunca entra em produção.
+    severity: ERROR
+    languages: [typescript, javascript]
+    paths:
+      include: [apps/web/src/]
+      exclude:
+        - apps/web/src/shared/lib/theme-preference.ts
+        - apps/web/src/mocks/
+        - '*.test.ts'
+        - '*.test.tsx'
+    pattern-either:
+      - pattern: localStorage.$M(...)
+      - pattern: sessionStorage.$M(...)
+      - pattern: window.localStorage.$M(...)
+      - pattern: window.sessionStorage.$M(...)
+
+  - id: nfc-service-role-confined
+    message: >-
+      A chave service_role só pode ser usada no SupabaseAdminService (ADR-0017) e declarada na validação do ambiente.
+    severity: ERROR
+    languages: [typescript, javascript]
+    paths:
+      include: [apps/, packages/]
+      exclude:
+        - apps/api/src/supabase/supabase-admin.service.ts
+        - apps/api/src/config/env.ts
+        - '*.integration.test.ts'
+    pattern-regex: SUPABASE_SERVICE_ROLE_KEY
+
+  - id: nfc-no-secrets-in-vite-env
+    message: >-
+      As variáveis VITE_ vão para o bundle público: nunca lhes ponha segredos (CLAUDE.md, regra 9).
+    severity: ERROR
+    languages: [typescript, javascript]
+    pattern-regex: import\.meta\.env\.VITE_[A-Z0-9_]*(SECRET|KEY|TOKEN|PASSWORD|SERVICE_ROLE)
