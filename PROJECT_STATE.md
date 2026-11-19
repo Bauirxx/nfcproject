@@ -98,13 +98,15 @@ Decisões da T-FE-05 (sem ADR próprio; impostas pela CSP estrita, ADR-0006):
 
 ## Alterações recentes
 
+- 2026-11-19: O dono aplicou a migração 0004. Os testes de integração do envio de contacto (`DB_INTEGRATION=1 vitest run src/contact-sending`) passam contra o Supabase real (7/7): registo mascarado, `contact_sent`, 409 sem cartão ativo, 404 entre empresas e 429 com `scope: hour` ao 11.º envio. O canal email só falta ligar com `RESEND_API_KEY` (ação do dono).
+
 - 2026-11-18: **Envio de contacto no backend (ADR-0019).**
   - `POST`/`GET /api/contact-shares`: posse do perfil, cartão ativo obrigatório e limites duráveis na base de dados (10/h e 50/dia por utilizador, 500/dia por empresa) com lock por utilizador.
   - Registo mascarado, `contact_sent` e auditoria.
   - Email pelo Resend: modelo fixo escapado, VCF em anexo, List-Unsubscribe; 503 sem `RESEND_API_KEY`.
   - Cancelamento `/api/public/unsubscribe` (GET confirma, POST `@SkipCsrf` com HMAC); o filtro de erros passa a devolver o `scope` e o `Retry-After`.
   - Testes: 105 unitários.
-  - **Defeito apanhado pelo teste de integração:** a chave estrangeira `contact_shares.sender_user_id → app.users` impedia o envio a utilizadores não espelhados. A migração `0004_contact_shares_sender.sql` corrige-o; **por aplicar pelo dono**. Até lá, os testes de integração do envio falham.
+  - **Defeito apanhado pelo teste de integração:** a chave estrangeira `contact_shares.sender_user_id → app.users` impedia o envio a utilizadores não espelhados. A migração `0004_contact_shares_sender.sql` corrige-o (aplicada a 2026-11-19).
   - Nota do ambiente: o Node portátil do scratchpad foi apagado pela limpeza dos temporários do Windows; foi reposto (v24.22.2, checksum oficial verificado) e o `corepack enable` foi refeito.
 
 - 2026-11-18: O dono aplicou a migração 0003 e configurou `SUPABASE_SERVICE_ROLE_KEY` (tipo `sb_secret_`) no `.env` e no Render. Verificado: chave válida, buckets `uploads-quarantine` (privado) e `public-images` (público), `app.uploads` com RLS. `uploads.integration.test.ts` passa contra o Supabase real: WebP de 512 px sem EXIF servido pela URL pública, consumo único, SVG recusado.
