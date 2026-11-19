@@ -6,7 +6,6 @@ import { CardsController } from './cards/cards.controller';
 import { CompaniesController } from './companies/companies.controller';
 import { ContactSendingService } from './contact-sending/contact-sending.service';
 import { ContactSharesController, UnsubscribeController } from './contact-sending/contact-shares.controller';
-import { EmailService } from './email/email.service';
 import { PublicCardService } from './public/public-card.service';
 import { MembersController } from './members/members.controller';
 import { MembersService } from './members/members.service';
@@ -31,7 +30,6 @@ import { UploadsService } from './uploads/uploads.service';
   providers: [
     AnalyticsService,
     ContactSendingService,
-    EmailService,
     ImageProcessorService,
     MembersService,
     PublicCardService,

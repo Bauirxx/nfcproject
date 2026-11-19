@@ -1,5 +1,6 @@
 // Configuração do backend lida do ambiente (CLAUDE.md, regra 9: nenhum segredo no código).
 // Validada no arranque; uma configuração inválida impede a aplicação de subir.
+import { emailSchema } from '@nfc-business/shared/schemas';
 import { z } from 'zod';
 
 export const envSchema = z.object({
@@ -35,6 +36,11 @@ export const envSchema = z.object({
   RESEND_API_KEY: z.string().min(10, 'too_short').optional(),
   /** Remetente dos emails, por exemplo `NFC Business <contacto@o-seu-dominio>` (domínio com SPF, DKIM e DMARC). */
   EMAIL_FROM: z.string().min(3).max(200).default('NFC Business <onboarding@resend.dev>'),
+  /**
+   * Destino dos alertas de operação (ADR-0021): erros 5xx, picos de envios e limites atingidos. Sem ele (ou sem
+   * RESEND_API_KEY), os alertas ficam só nos logs, com o campo `alert`.
+   */
+  ALERT_EMAIL_TO: emailSchema.optional(),
   /** Máximo de ligações do pool; o pooler do Supabase também limita. */
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
   /**

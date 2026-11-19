@@ -213,6 +213,19 @@ Do prompt mestre: `users`, `companies`, `company_members`, `digital_profiles`, `
 
 - No CI (ADR-0020, confirmado): as regras Semgrep de `.semgrep/nfc-business.yml` repetem as de cima para todo o repositório e acrescentam: sem cliente Supabase em `apps/web`, `SUPABASE_SERVICE_ROLE_KEY` só em `supabase-admin.service.ts` e `config/env.ts`, sem TLS sem verificação, sem segredos em `VITE_`.
 
+## 6.2 Logs e alertas do backend (confirmado, ADR-0021)
+
+| Ficheiro | Papel | Usado por |
+|----------|-------|-----------|
+| `apps/api/src/common/request-context.ts` | `AsyncLocalStorage` com o `request_id` | `json-logger`, `request-logging`, `alerts` |
+| `apps/api/src/common/json-logger.ts` | Logger JSON global (`JsonLogger`, `formatLogLine`) | `main.ts` (`NestFactory.create({ logger })`); todos os `new Logger(...)` |
+| `apps/api/src/common/request-logging.ts` | Middleware: `X-Request-Id`, log de acesso com a rota padrão, chama o monitor | `main.ts` (primeiro middleware) |
+| `apps/api/src/common/request-monitor.ts` | Regras de alerta sobre pedidos terminados (5xx, picos e 429 de envios, 429 de autenticação) | `request-logging`; depende de `AlertService` |
+| `apps/api/src/common/alerts.ts` | `AlertService`: log `alert` + email para `ALERT_EMAIL_TO`, silêncio de 15 min | `RequestMonitor`; depende de `EmailService` |
+| `apps/api/src/email/email.service.ts` | Agora no `CoreModule` (global); `sendAlert` além de `sendContact` | `ContactSendingService`, `AlertService` |
+
+Inferido: as rotas em `AUTH_LIMITED_ROUTES` (`request-monitor.ts`) e `/api/contact-shares` têm de acompanhar os controladores; mudar um caminho exige atualizar a lista.
+
 ## 6.1 CI e cadeia de fornecimento (confirmado, ADR-0020)
 
 | Ficheiro | Papel | Depende de |
@@ -235,4 +248,6 @@ Do prompt mestre: `users`, `companies`, `company_members`, `digital_profiles`, `
 | `apps/web/src/shared/api/*` | `client.test.ts` e, quando existirem, os testes das features |
 | `endpoints.ts` | o handler correspondente, o ADR-0004 e este grafo |
 | Mover `theme-preference.ts`, `supabase-admin.service.ts` ou `config/env.ts` | os caminhos em `.semgrep/nfc-business.yml` (senão o job `sast` falha) |
+| Caminhos de `auth/*` ou `contact-shares` | `AUTH_LIMITED_ROUTES`/`CONTACT_SHARES_ROUTE` em `request-monitor.ts` e `observability.test.ts` |
+| `json-logger.ts`, `request-logging.ts` ou `esbuild.mjs` | `observability.test.ts` e arrancar `dist/server.cjs` para ver as linhas JSON |
 | Dependências (`package.json`, `pnpm-lock.yaml`, `overrides`) | `pnpm audit`, osv-scanner e `pnpm install --frozen-lockfile` (job `dependencies` e `quality`) |

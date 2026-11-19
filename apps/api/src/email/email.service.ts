@@ -56,10 +56,8 @@ export class EmailService {
   /** Envia o email; qualquer falha do fornecedor é um 503 genérico (o envio não fica registado). */
   async sendContact(email: ContactEmail, fetcher: typeof fetch = fetch): Promise<void> {
     if (!this.apiKey) throw new ServiceUnavailableException({ error: { code: 'email_unavailable' } });
-    const response = await fetcher('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const sent = await this.post(
+      {
         from: this.from,
         to: [email.to],
         subject: email.subject,
@@ -70,7 +68,23 @@ export class EmailService {
           'List-Unsubscribe': `<${email.unsubscribeUrl}>`,
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         },
-      }),
+      },
+      fetcher,
+    );
+    if (!sent) throw new ServiceUnavailableException({ error: { code: 'email_unavailable' } });
+  }
+
+  /** Alerta de operação para a equipa (ADR-0021): só texto simples. Devolve `false` se não saiu. */
+  async sendAlert(to: string, subject: string, text: string, fetcher: typeof fetch = fetch): Promise<boolean> {
+    if (!this.apiKey) return false;
+    return this.post({ from: this.from, to: [to], subject, text }, fetcher);
+  }
+
+  private async post(payload: Record<string, unknown>, fetcher: typeof fetch): Promise<boolean> {
+    const response = await fetcher('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(10_000),
     }).catch((error: unknown) => {
       this.logger.error(`Resend indisponível: ${error instanceof Error ? error.message : 'erro'}`);
@@ -78,7 +92,8 @@ export class EmailService {
     });
     if (!response?.ok) {
       if (response) this.logger.error(`Resend recusou o envio: estado ${response.status}`);
-      throw new ServiceUnavailableException({ error: { code: 'email_unavailable' } });
+      return false;
     }
+    return true;
   }
 }

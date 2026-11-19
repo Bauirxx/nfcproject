@@ -31,6 +31,9 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false
+      # Destino dos alertas de operação (ADR-0021). Sem ele, os alertas ficam só nos logs.
+      - key: ALERT_EMAIL_TO
+        sync: false
       # Hash dos IPs nas estatísticas (ADR-0014): o Render gera um valor aleatório.
       - key: IP_HASH_SECRET
         generateValue: true

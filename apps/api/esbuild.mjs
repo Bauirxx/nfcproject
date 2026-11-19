@@ -9,6 +9,8 @@ const shared = {
   format: 'cjs',
   tsconfig: 'tsconfig.json',
   logLevel: 'info',
+  // Mantém os nomes das classes: são o `context` dos logs JSON (ADR-0021) e o Nest usa-os nas mensagens.
+  keepNames: true,
   // Dependências opcionais que o NestJS carrega só se existirem (não as usamos): ficam de fora do pacote.
   external: [
     '@nestjs/microservices',
