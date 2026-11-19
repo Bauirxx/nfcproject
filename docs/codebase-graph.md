@@ -226,6 +226,15 @@ Do prompt mestre: `users`, `companies`, `company_members`, `digital_profiles`, `
 
 Inferido: as rotas em `AUTH_LIMITED_ROUTES` (`request-monitor.ts`) e `/api/contact-shares` têm de acompanhar os controladores; mudar um caminho exige atualizar a lista.
 
+## 6.3 Cópias de segurança (confirmado, ADR-0022)
+
+| Ficheiro | Papel | Depende de |
+|----------|-------|------------|
+| `scripts/backup/backup-db.ps1` | pg_dump (`app`, `auth`) → gpg AES-256, `.sha256`, retenção de 35 dias | pg_dump ≥ 17, gpg do Git, `apps/api/certs/supabase-ca.crt` |
+| `scripts/backup/restore-db.ps1` | Restauro só de dados (`auth`, depois `app`, sem `auth.schema_migrations`) num projeto de teste | pg_restore ≥ 17, gpg, migrações `supabase/migrations/*` já aplicadas no destino |
+
+Inferido: uma migração que crie tabelas com dados novos em `app` fica coberta sem alterações (o dump é do schema inteiro); uma tabela fora de `app`/`auth` não fica. Mudar o caminho do certificado obriga a atualizar os dois scripts.
+
 ## 6.1 CI e cadeia de fornecimento (confirmado, ADR-0020)
 
 | Ficheiro | Papel | Depende de |

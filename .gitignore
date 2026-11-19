@@ -19,6 +19,13 @@ playwright/.cache/
 .env.*
 !.env.example
 
+# Cópias da base de dados (ADR-0022): nunca no repositório, nem cifradas.
+*.dump
+*.dump.gpg
+*.dump.gpg.sha256
+*.sql.gz
+nfc-backups/
+
 # Editor e sistema
 .vscode/*
 !.vscode/extensions.json
