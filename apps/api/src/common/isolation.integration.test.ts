@@ -56,9 +56,8 @@ describe.runIf(enabled && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY))('Isola
   const env = loadEnv({ ...process.env, NODE_ENV: 'test' });
   const database = new DatabaseService(env);
   // Só o teste cria e apaga as contas temporárias; a aplicação usa a service_role apenas no SupabaseAdminService.
-  const authAdmin = createClient(env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  }).auth.admin;
+  // Criado no beforeAll: o corpo do describe corre mesmo quando o teste é saltado (CI sem `.env`).
+  let authAdmin: ReturnType<typeof createClient>['auth']['admin'];
   const supabaseAdmin = {
     configured: true,
     setRole: vi.fn(async () => undefined),
@@ -96,6 +95,9 @@ describe.runIf(enabled && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY))('Isola
   }
 
   beforeAll(async () => {
+    authAdmin = createClient(env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    }).auth.admin;
     await cleanupRows();
     memberA = await createAuthUser(`iso-a-${Date.now()}@exemplo.test`);
     memberB = await createAuthUser(`iso-b-${Date.now()}@exemplo.test`);
